@@ -19,6 +19,9 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
 ]
+app = [
+    "streamlit>=1.30",
+]
 
 [project.scripts]
 sharpe = "keep_rollin.cli:main"
