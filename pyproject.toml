@@ -26,7 +26,7 @@ app = [
 ]
 
 [project.scripts]
-sharpe = "keep_rollin.cli:main"
+rollin = "keep_rollin.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/keep_rollin"]
