@@ -27,5 +27,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev --python ${{ matrix.python-version }}
 
+      - name: Lint with ruff
+        run: uv run --python ${{ matrix.python-version }} ruff check src tests app.py
+
+      - name: Check formatting with ruff
+        run: uv run --python ${{ matrix.python-version }} ruff format --check src tests app.py
+
+      - name: Type check with mypy
+        run: uv run --python ${{ matrix.python-version }} mypy src keep_rollin
+
       - name: Run tests
         run: uv run --python ${{ matrix.python-version }} pytest --cov=keep_rollin --cov-report=term-missing
