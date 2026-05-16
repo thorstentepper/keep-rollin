@@ -57,8 +57,8 @@ Options:
 | `--benchmark` | `^GSPC` | Yahoo Finance symbol for the benchmark |
 | `--start` | required | Start date `YYYY-MM-DD` |
 | `--end` | required | End date `YYYY-MM-DD` |
-| `--rolling-window` | `63` | Rolling Sharpe window in trading days |
-| `--plot` | off | Display the rolling Sharpe ratio chart |
+| `--rolling-window` | `63` | Rolling window in trading days (for both Sharpe and Sortino) |
+| `--plot` | off | Display rolling Sharpe and Sortino ratio charts |
 
 
 ## Running tests
@@ -73,16 +73,18 @@ pytest --cov=keep_rollin
 ## Project structure
 
 ```
-app.py           — Streamlit dashboard
+.github/workflows/ci.yml       — pytest on push/PR (Python 3.10 and 3.13)
+Dockerfile                      — multi-stage build for Streamlit app
+app.py                         — Streamlit dashboard
 src/keep_rollin/
-    data.py      — fetch adjusted close prices from Yahoo Finance
-    metrics.py   — Sharpe, Sortino, max drawdown, rolling Sharpe, rolling Sortino
-    cli.py       — command-line entry point
+    data.py                    — fetch adjusted close prices from Yahoo Finance
+    metrics.py                 — Sharpe, Sortino, max drawdown, rolling Sharpe, rolling Sortino
+    cli.py                     — command-line entry point
 tests/
     test_data.py
     test_metrics.py
 notebooks/
-    sharpe_ratio.ipynb   — original DataCamp submission
+    sharpe_ratio.ipynb         — original DataCamp submission
 pyproject.toml
 ```
 
