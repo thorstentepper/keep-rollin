@@ -1,5 +1,7 @@
 # keep-rollin
 
+[![CI](https://github.com/thorstentepper/keep-rollin/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstentepper/keep-rollin/actions/workflows/ci.yml)
+
 ## Description
 
 Computes annualised risk/return metrics for one or more assets against a configurable benchmark:
