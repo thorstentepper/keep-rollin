@@ -33,6 +33,15 @@ streamlit run app.py
 
 Opens an interactive dashboard in your browser: pick tickers, benchmark, date range, and rolling window from the sidebar and click **Analyse**.
 
+#### Docker
+
+```bash
+docker build -t keep-rollin .
+docker run --rm -p 8501:8501 keep-rollin
+```
+
+Then visit <http://localhost:8501>. The image runs as a non-root user and includes a healthcheck on Streamlit's `/_stcore/health` endpoint.
+
 ### CLI
 
 ```bash
