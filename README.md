@@ -8,6 +8,7 @@ Computes annualised risk/return metrics for one or more assets against a configu
 - **Sortino ratio** — excess return per unit of downside volatility (doesn't penalise upside)
 - **Max drawdown** — largest peak-to-trough decline over the period
 - **Rolling Sharpe ratio** — Sharpe ratio computed over a sliding window (default: 63 trading days ≈ 1 quarter)
+- **Rolling Sortino ratio** — same, but penalising only downside volatility within each window
 
 Data is fetched live from Yahoo Finance, so any ticker and date range can be analysed without managing local CSV files.
 
@@ -52,7 +53,7 @@ pytest --cov=keep_rollin
 ```
 src/keep_rollin/
     data.py      — fetch adjusted close prices from Yahoo Finance
-    metrics.py   — Sharpe, Sortino, max drawdown, rolling Sharpe
+    metrics.py   — Sharpe, Sortino, max drawdown, rolling Sharpe, rolling Sortino
     cli.py       — command-line entry point
 tests/
     test_data.py

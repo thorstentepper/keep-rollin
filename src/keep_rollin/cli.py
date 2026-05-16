@@ -11,6 +11,7 @@ from keep_rollin.metrics import (
     excess_returns,
     max_drawdown,
     rolling_sharpe_ratio,
+    rolling_sortino_ratio,
     sharpe_ratio,
     sortino_ratio,
 )
@@ -59,13 +60,15 @@ def main(argv: list[str] | None = None) -> None:
     bench_ret = daily_returns(benchmark_prices)
     exc = excess_returns(stock_ret, bench_ret)
 
-    rolling = rolling_sharpe_ratio(exc, window=args.rolling_window)
+    rolling_sharpe = rolling_sharpe_ratio(exc, window=args.rolling_window)
+    rolling_sortino = rolling_sortino_ratio(exc, window=args.rolling_window)
     results = pd.DataFrame(
         {
             "Sharpe (ann.)": sharpe_ratio(exc),
             "Sortino (ann.)": sortino_ratio(exc),
             "Max Drawdown": max_drawdown(stock_prices),
-            f"Avg Rolling Sharpe ({args.rolling_window}d)": rolling.mean(),
+            f"Avg Rolling Sharpe ({args.rolling_window}d)": rolling_sharpe.mean(),
+            f"Avg Rolling Sortino ({args.rolling_window}d)": rolling_sortino.mean(),
         }
     ).round(2)
 
@@ -75,13 +78,14 @@ def main(argv: list[str] | None = None) -> None:
     print(f"\nHighest Sharpe ratio: {best} ({results.loc[best, 'Sharpe (ann.)']:.2f})")
 
     if args.plot:
-        ax = rolling.plot(
-            title=f"Rolling Sharpe Ratio ({args.rolling_window}-day window)",
-            figsize=(10, 4),
-        )
-        ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
-        ax.set_ylabel("Sharpe Ratio (annualised)")
-        ax.set_xlabel("")
+        fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+        rolling_sharpe.plot(ax=axes[0], title=f"Rolling Sharpe ({args.rolling_window}-day window)")
+        axes[0].axhline(0, color="black", linewidth=0.8, linestyle="--")
+        axes[0].set_ylabel("Sharpe (annualised)")
+        rolling_sortino.plot(ax=axes[1], title=f"Rolling Sortino ({args.rolling_window}-day window)")
+        axes[1].axhline(0, color="black", linewidth=0.8, linestyle="--")
+        axes[1].set_ylabel("Sortino (annualised)")
+        axes[1].set_xlabel("")
         plt.tight_layout()
         plt.show()
 

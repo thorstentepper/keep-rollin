@@ -4,6 +4,7 @@ from keep_rollin.metrics import (
     excess_returns,
     sharpe_ratio,
     rolling_sharpe_ratio,
+    rolling_sortino_ratio,
     sortino_ratio,
     max_drawdown,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "excess_returns",
     "sharpe_ratio",
     "rolling_sharpe_ratio",
+    "rolling_sortino_ratio",
     "sortino_ratio",
     "max_drawdown",
 ]

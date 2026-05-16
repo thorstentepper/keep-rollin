@@ -9,6 +9,7 @@ from keep_rollin.metrics import (
     excess_returns,
     max_drawdown,
     rolling_sharpe_ratio,
+    rolling_sortino_ratio,
     sharpe_ratio,
     sortino_ratio,
 )
@@ -111,6 +112,32 @@ class TestSortinoRatio:
         dates = pd.date_range("2020-01-01", periods=252, freq="B")
         exc = pd.DataFrame({"A": rng.normal(0.001, 0.01, 252)}, index=dates)
         assert sortino_ratio(exc)["A"] >= sharpe_ratio(exc)["A"]
+
+
+class TestRollingSortinoRatio:
+    def test_shape(self, excess):
+        assert rolling_sortino_ratio(excess, window=63).shape == excess.shape
+
+    def test_leading_values_are_nan(self, excess):
+        rolling = rolling_sortino_ratio(excess, window=63)
+        assert rolling.iloc[:62].isna().all().all()
+
+    def test_values_after_window_are_finite(self, excess):
+        rolling = rolling_sortino_ratio(excess, window=63)
+        assert rolling.iloc[63:].notna().all().all()
+
+    def test_full_window_matches_sortino(self, excess):
+        """At window == len(excess) the single output row equals sortino_ratio."""
+        n = len(excess)
+        result = rolling_sortino_ratio(excess, window=n).iloc[-1]
+        expected = sortino_ratio(excess)
+        pd.testing.assert_series_equal(result, expected, check_names=False)
+
+    def test_wider_window_smoother(self, excess):
+        """Wider windows produce less variable estimates (documents noisiness at short windows)."""
+        narrow = rolling_sortino_ratio(excess, window=21).dropna().std()
+        wide = rolling_sortino_ratio(excess, window=63).dropna().std()
+        assert (wide <= narrow).all()
 
 
 class TestMaxDrawdown:
