@@ -1,4 +1,4 @@
-# keep-rollin
+# Keep Rollin'
 
 [![CI](https://github.com/thorstentepper/keep-rollin/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstentepper/keep-rollin/actions/workflows/ci.yml)
 
@@ -47,7 +47,7 @@ Then visit <http://localhost:8501>. The image runs as a non-root user and includ
 ### CLI
 
 ```bash
-sharpe AMZN META --benchmark ^GSPC --start 2016-01-01 --end 2016-12-31
+rollin AMZN META --benchmark ^GSPC --start 2016-01-01 --end 2016-12-31
 ```
 
 Options:
