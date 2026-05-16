@@ -18,11 +18,22 @@ Originally completed as a DataCamp project in January 2022; the notebook is pres
 ## Installation
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev]"       # library + CLI + dev tools
+pip install -e ".[dev,app]"   # also includes Streamlit
 ```
 
 
 ## Usage
+
+### Streamlit app
+
+```bash
+streamlit run app.py
+```
+
+Opens an interactive dashboard in your browser: pick tickers, benchmark, date range, and rolling window from the sidebar and click **Analyse**.
+
+### CLI
 
 ```bash
 sharpe AMZN META --benchmark ^GSPC --start 2016-01-01 --end 2016-12-31
@@ -51,6 +62,7 @@ pytest --cov=keep_rollin
 ## Project structure
 
 ```
+app.py           — Streamlit dashboard
 src/keep_rollin/
     data.py      — fetch adjusted close prices from Yahoo Finance
     metrics.py   — Sharpe, Sortino, max drawdown, rolling Sharpe, rolling Sortino
