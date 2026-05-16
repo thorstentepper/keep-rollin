@@ -79,10 +79,14 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.plot:
         fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
-        rolling_sharpe.plot(ax=axes[0], title=f"Rolling Sharpe ({args.rolling_window}-day window)")
+        rolling_sharpe.plot(
+            ax=axes[0], title=f"Rolling Sharpe ({args.rolling_window}-day window)"
+        )
         axes[0].axhline(0, color="black", linewidth=0.8, linestyle="--")
         axes[0].set_ylabel("Sharpe (annualised)")
-        rolling_sortino.plot(ax=axes[1], title=f"Rolling Sortino ({args.rolling_window}-day window)")
+        rolling_sortino.plot(
+            ax=axes[1], title=f"Rolling Sortino ({args.rolling_window}-day window)"
+        )
         axes[1].axhline(0, color="black", linewidth=0.8, linestyle="--")
         axes[1].set_ylabel("Sortino (annualised)")
         axes[1].set_xlabel("")

@@ -31,9 +31,7 @@ def sample_prices() -> pd.DataFrame:
 def benchmark_prices(sample_prices: pd.DataFrame) -> pd.Series:
     rng = np.random.default_rng(99)
     ret = rng.normal(0.0003, 0.008, len(sample_prices))
-    return pd.Series(
-        100 * (1 + ret).cumprod(), index=sample_prices.index, name="BM"
-    )
+    return pd.Series(100 * (1 + ret).cumprod(), index=sample_prices.index, name="BM")
 
 
 @pytest.fixture
