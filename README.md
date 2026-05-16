@@ -20,8 +20,13 @@ Originally completed as a DataCamp project in January 2022; the notebook is pres
 ## Installation
 
 ```bash
-pip install -e ".[dev]"       # library + CLI + dev tools
-pip install -e ".[dev,app]"   # also includes Streamlit
+uv sync --all-extras          # library + CLI + dev tools + Streamlit
+```
+
+Or install a minimal set:
+
+```bash
+uv sync --extra dev           # library + CLI + dev tools only
 ```
 
 
@@ -30,7 +35,7 @@ pip install -e ".[dev,app]"   # also includes Streamlit
 ### Streamlit app
 
 ```bash
-streamlit run app.py
+uv run streamlit run app.py
 ```
 
 Opens an interactive dashboard in your browser: pick tickers, benchmark, date range, and rolling window from the sidebar and click **Analyse**.
@@ -64,9 +69,9 @@ Options:
 ## Running tests
 
 ```bash
-pytest
+uv run pytest
 # with coverage
-pytest --cov=keep_rollin
+uv run pytest --cov=keep_rollin
 ```
 
 
