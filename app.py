@@ -12,6 +12,7 @@ from keep_rollin.metrics import (
     excess_returns,
     max_drawdown,
     rolling_sharpe_ratio,
+    rolling_sortino_ratio,
     sharpe_ratio,
     sortino_ratio,
 )
@@ -84,14 +85,16 @@ if stock_prices.empty:
 stock_ret = daily_returns(stock_prices)
 bench_ret = daily_returns(benchmark_prices)
 exc = excess_returns(stock_ret, bench_ret)
-rolling = rolling_sharpe_ratio(exc, window=window)
+rolling_sharpe = rolling_sharpe_ratio(exc, window=window)
+rolling_sortino = rolling_sortino_ratio(exc, window=window)
 
 results = pd.DataFrame(
     {
         "Sharpe (ann.)": sharpe_ratio(exc),
         "Sortino (ann.)": sortino_ratio(exc),
         "Max Drawdown": max_drawdown(stock_prices),
-        f"Avg Rolling Sharpe ({window}d)": rolling.mean(),
+        f"Avg Rolling Sharpe ({window}d)": rolling_sharpe.mean(),
+        f"Avg Rolling Sortino ({window}d)": rolling_sortino.mean(),
     }
 ).round(2)
 
@@ -103,15 +106,26 @@ st.subheader("Summary")
 st.dataframe(results, width="stretch")
 st.caption(f"Highest Sharpe: **{best}** ({results.loc[best, 'Sharpe (ann.)']:.2f})")
 
-# ── Rolling Sharpe chart ──────────────────────────────────────────────────────
+# ── Rolling charts ────────────────────────────────────────────────────────────
+
+
+def _plot_rolling(series: pd.DataFrame, ylabel: str) -> plt.Figure:
+    fig, ax = plt.subplots(figsize=(10, 3))
+    series.plot(ax=ax)
+    ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel("")
+    ax.legend(loc="upper left")
+    plt.tight_layout()
+    return fig
+
 
 st.subheader(f"Rolling Sharpe ratio — {window}-day window")
-fig, ax = plt.subplots(figsize=(10, 3))
-rolling.plot(ax=ax)
-ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
-ax.set_ylabel("Sharpe (annualised)")
-ax.set_xlabel("")
-ax.legend(loc="upper left")
-plt.tight_layout()
+fig = _plot_rolling(rolling_sharpe, "Sharpe (annualised)")
+st.pyplot(fig)
+plt.close(fig)
+
+st.subheader(f"Rolling Sortino ratio — {window}-day window")
+fig = _plot_rolling(rolling_sortino, "Sortino (annualised)")
 st.pyplot(fig)
 plt.close(fig)
