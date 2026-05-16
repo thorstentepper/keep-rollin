@@ -34,7 +34,7 @@ jobs:
         run: uv run --python ${{ matrix.python-version }} ruff format --check src tests app.py
 
       - name: Type check with mypy
-        run: uv run --python ${{ matrix.python-version }} mypy src keep_rollin
+        run: uv run --python ${{ matrix.python-version }} mypy src
 
       - name: Run tests
         run: uv run --python ${{ matrix.python-version }} pytest --cov=keep_rollin --cov-report=term-missing
