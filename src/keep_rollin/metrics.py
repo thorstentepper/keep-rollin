@@ -48,6 +48,25 @@ def sortino_ratio(excess: pd.DataFrame) -> pd.Series:
     return mean / downside * np.sqrt(TRADING_DAYS)
 
 
+def rolling_sortino_ratio(excess: pd.DataFrame, window: int = 63) -> pd.DataFrame:
+    """Sortino ratio computed over a rolling window of trading days.
+
+    Parameters
+    ----------
+    window:
+        Number of trading days per window. Default 63 ≈ one quarter.
+
+    Notes
+    -----
+    Downside semi-deviation is undefined when a window contains no negative
+    returns, producing inf. This is more likely over short windows, so
+    estimates are noisier than rolling Sharpe at the same window length.
+    """
+    roll_mean = excess.rolling(window).mean()
+    downside = excess.clip(upper=0).pow(2).rolling(window).mean().pow(0.5)
+    return roll_mean / downside * np.sqrt(TRADING_DAYS)
+
+
 def max_drawdown(prices: pd.DataFrame) -> pd.Series:
     """Maximum peak-to-trough decline for each asset, expressed as a fraction (≤ 0)."""
     cumulative = (1 + prices.pct_change().fillna(0)).cumprod()
