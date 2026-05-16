@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sharpe_ratio.metrics import (
+from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
     max_drawdown,

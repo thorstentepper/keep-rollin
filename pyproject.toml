@@ -21,10 +21,10 @@ dev = [
 ]
 
 [project.scripts]
-sharpe = "sharpe_ratio.cli:main"
+sharpe = "keep_rollin.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sharpe_ratio"]
+packages = ["src/keep_rollin"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,5 +1,5 @@
-from sharpe_ratio.data import fetch_prices
-from sharpe_ratio.metrics import (
+from keep_rollin.data import fetch_prices
+from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
     sharpe_ratio,

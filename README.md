@@ -1,4 +1,4 @@
-# Risk and Returns: The Sharpe Ratio
+# keep-rollin
 
 ## Description
 
@@ -43,14 +43,14 @@ Options:
 ```bash
 pytest
 # with coverage
-pytest --cov=sharpe_ratio
+pytest --cov=keep_rollin
 ```
 
 
 ## Project structure
 
 ```
-src/sharpe_ratio/
+src/keep_rollin/
     data.py      — fetch adjusted close prices from Yahoo Finance
     metrics.py   — Sharpe, Sortino, max drawdown, rolling Sharpe
     cli.py       — command-line entry point

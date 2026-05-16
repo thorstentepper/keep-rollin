@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sharpe_ratio.data import fetch_prices
+from keep_rollin.data import fetch_prices
 
 
 def _make_yf_response(tickers: list[str], n: int = 10) -> pd.DataFrame:
@@ -18,7 +18,7 @@ def _make_yf_response(tickers: list[str], n: int = 10) -> pd.DataFrame:
     return df
 
 
-@patch("sharpe_ratio.data.yf.download")
+@patch("keep_rollin.data.yf.download")
 def test_stock_columns_match_requested_tickers(mock_dl):
     tickers = ["AMZN", "META"]
     benchmark = "^GSPC"
@@ -27,7 +27,7 @@ def test_stock_columns_match_requested_tickers(mock_dl):
     assert list(stocks.columns) == tickers
 
 
-@patch("sharpe_ratio.data.yf.download")
+@patch("keep_rollin.data.yf.download")
 def test_benchmark_returned_as_series(mock_dl):
     tickers = ["AMZN"]
     benchmark = "^GSPC"
@@ -36,7 +36,7 @@ def test_benchmark_returned_as_series(mock_dl):
     assert isinstance(bm, pd.Series)
 
 
-@patch("sharpe_ratio.data.yf.download")
+@patch("keep_rollin.data.yf.download")
 def test_download_receives_all_tickers(mock_dl):
     tickers = ["AMZN", "META"]
     benchmark = "^GSPC"
@@ -46,7 +46,7 @@ def test_download_receives_all_tickers(mock_dl):
     assert set(called_with) == set(tickers + [benchmark])
 
 
-@patch("sharpe_ratio.data.yf.download")
+@patch("keep_rollin.data.yf.download")
 def test_output_contains_no_na(mock_dl):
     tickers = ["AMZN", "META"]
     benchmark = "^GSPC"
@@ -56,7 +56,7 @@ def test_output_contains_no_na(mock_dl):
     assert not bm.isna().any()
 
 
-@patch("sharpe_ratio.data.yf.download")
+@patch("keep_rollin.data.yf.download")
 def test_stock_and_benchmark_share_index(mock_dl):
     tickers = ["AMZN"]
     benchmark = "^GSPC"
