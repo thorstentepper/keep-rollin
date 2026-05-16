@@ -1,39 +1,70 @@
-# Project Title
-Risk and Returns: The Sharpe Ratio
-
+# Risk and Returns: The Sharpe Ratio
 
 ## Description
-This project calculates the Sharpe Ratio, which is a measure of assessing the return of an investment against a benchmark. The underlying data consists of Amazon and Facebook stocks which are compared against the S&P 500 for the time period from 04.01.2016 to 30.12.2016. After initial exploratory data analysis, the inputs for the Sharpe formula are calculated via average excess returns to arrive at an annualised measure.
+
+Computes annualised risk/return metrics for one or more assets against a configurable benchmark:
+
+- **Sharpe ratio** — excess return per unit of total volatility
+- **Sortino ratio** — excess return per unit of downside volatility (doesn't penalise upside)
+- **Max drawdown** — largest peak-to-trough decline over the period
+- **Rolling Sharpe ratio** — Sharpe ratio computed over a sliding window (default: 63 trading days ≈ 1 quarter)
+
+Data is fetched live from Yahoo Finance, so any ticker and date range can be analysed without managing local CSV files.
+
+Originally completed as a DataCamp project in January 2022; the notebook is preserved in `notebooks/`.
 
 
-## Date created
-The project was completed on 01.01.2022.
+## Installation
+
+```bash
+pip install -e ".[dev]"
+```
 
 
 ## Usage
-Point app.py to the correct file paths for stock and benchmark data and execute the script. The files should have a "Date" column that can serve as the index. Also make sure that both data sets have the same number of rows.
+
+```bash
+sharpe AMZN META --benchmark ^GSPC --start 2016-01-01 --end 2016-12-31
+```
+
+Options:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--benchmark` | `^GSPC` | Yahoo Finance symbol for the benchmark |
+| `--start` | required | Start date `YYYY-MM-DD` |
+| `--end` | required | End date `YYYY-MM-DD` |
+| `--rolling-window` | `63` | Rolling Sharpe window in trading days |
+| `--plot` | off | Display the rolling Sharpe ratio chart |
 
 
-## Files used
-The project uses two csv-files available via DataCamp: 'stock_data.csv' and 'benchmark_data.csv'
+## Running tests
 
-The stock_data.csv file contains 3 columns; the date column is used as an index when the data is imported. Here are the data types present in the dataset:
+```bash
+pytest
+# with coverage
+pytest --cov=sharpe_ratio
+```
 
-| column_name | data_type |
-|-------------|-----------|
-| Date        | (Index)   |
-| Amazon      | float64   |
-| Facebook    | float64   |
 
-The benchmark_data.csv file contains 2 columns; the date column is used as an index when the data is imported. Here are the data types present in the dataset:
+## Project structure
 
-| column_name | data_type |
-|-------------|-----------|
-| Date        | (Index)   |
-| S&P 500     | float64   |
+```
+src/sharpe_ratio/
+    data.py      — fetch adjusted close prices from Yahoo Finance
+    metrics.py   — Sharpe, Sortino, max drawdown, rolling Sharpe
+    cli.py       — command-line entry point
+tests/
+    test_data.py
+    test_metrics.py
+notebooks/
+    sharpe_ratio.ipynb   — original DataCamp submission
+pyproject.toml
+```
 
 
 ## Credits
-Stefan Jansen created the project tasks for DataCamp.
 
-The Python code in sharpe_ratio.ipynb was accepted as my solution to the project. In order to improve reusability, the code has been refactored into functions that are used by app.py.
+Original project tasks by Stefan Jansen for DataCamp.
+
+The data used in `notebooks/sharpe_ratio.ipynb` comes from two DataCamp CSV files covering Amazon and Facebook vs. the S&P 500 for the full year 2016.
