@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --extra app
 
 COPY src ./src
-COPY app.py ./
+COPY streamlit_app.py ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --extra app
 
@@ -26,7 +26,7 @@ WORKDIR /app
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --from=builder --chown=app:app /app/src /app/src
-COPY --from=builder --chown=app:app /app/app.py /app/app.py
+COPY --from=builder --chown=app:app /app/streamlit_app.py /app/streamlit_app.py
 
 ENV PATH="/app/.venv/bin:$PATH" \
     STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
@@ -40,4 +40,4 @@ EXPOSE 8501
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8501/_stcore/health').status == 200 else 1)"
 
-CMD ["streamlit", "run", "app.py"]
+CMD ["streamlit", "run", "streamlit_app.py"]

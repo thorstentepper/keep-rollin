@@ -912,6 +912,7 @@ dependencies = [
     { name = "numpy", version = "2.4.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pyarrow" },
     { name = "yfinance" },
 ]
 
@@ -932,6 +933,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pandas", specifier = ">=2.0" },
+    { name = "pyarrow", specifier = ">=14.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
