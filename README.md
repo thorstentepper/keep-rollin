@@ -15,7 +15,7 @@ Computes annualised risk/return metrics for one or more assets against a configu
 - **Rolling Sharpe ratio** — Sharpe ratio computed over a sliding window (default: 63 trading days ≈ 1 quarter)
 - **Rolling Sortino ratio** — same, but penalising only downside volatility within each window
 
-Data is fetched live from Yahoo Finance, so any ticker and date range can be analysed without managing local CSV files.
+Data is fetched live from Yahoo Finance, so any ticker and date range can be analysed without managing local CSV files. If Yahoo Finance is unavailable, the dashboard falls back to a small price snapshot shipped with the package so it still renders — clearly flagged as offline data.
 
 
 ## Installation
@@ -36,7 +36,7 @@ uv sync --extra dev           # library + CLI + dev tools only
 ### Streamlit app
 
 ```bash
-uv run streamlit run app.py
+uv run streamlit run streamlit_app.py
 ```
 
 Opens an interactive dashboard in your browser: pick tickers, benchmark, date range, and rolling window from the sidebar and click **Analyse**.
@@ -67,6 +67,17 @@ Options:
 | `--plot` | off | Display rolling Sharpe and Sortino ratio charts |
 
 
+### Refreshing the offline snapshot
+
+The bundled snapshot backs the dashboard when Yahoo Finance is unavailable. Regenerate it with:
+
+```bash
+uv run python scripts/refresh_fallback.py
+```
+
+It refuses to overwrite the existing snapshot if the fetch fails or returns too little data, so a bad run cannot destroy the safety net. Pass tickers and `--benchmark` / `--start` / `--end` to change what it covers.
+
+
 ## Running tests
 
 ```bash
@@ -81,11 +92,15 @@ uv run pytest --cov=keep_rollin
 ```
 .github/workflows/ci.yml       — pytest on push/PR (Python 3.10 and 3.13)
 Dockerfile                      — multi-stage build for Streamlit app
-app.py                         — Streamlit dashboard
+streamlit_app.py               — Streamlit dashboard
+scripts/
+    refresh_fallback.py        — regenerate the offline price snapshot
 src/keep_rollin/
-    data.py                    — fetch adjusted close prices from Yahoo Finance
+    data.py                    — fetch adjusted close prices, with offline fallback
     metrics.py                 — Sharpe, Sortino, max drawdown, rolling Sharpe, rolling Sortino
     cli.py                     — command-line entry point
+    resources/
+        fallback_prices.parquet — offline snapshot used when Yahoo Finance is down
 tests/
     test_data.py
     test_metrics.py

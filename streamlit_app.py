@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
-from keep_rollin.data import fetch_prices
+from keep_rollin.data import FallbackUnavailable, fetch_prices_with_fallback
 from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
@@ -63,15 +63,21 @@ def load(
     benchmark: str,
     start: str,
     end: str,
-) -> tuple[pd.DataFrame, pd.Series]:
-    return fetch_prices(tickers, benchmark, start, end)
+) -> tuple[pd.DataFrame, pd.Series, bool]:
+    return fetch_prices_with_fallback(tickers, benchmark, start, end)
 
 
 with st.spinner("Fetching data from Yahoo Finance…"):
     try:
-        stock_prices, benchmark_prices = load(
+        stock_prices, benchmark_prices, used_fallback = load(
             tuple(tickers), benchmark, str(start), str(end)
         )
+    except FallbackUnavailable as exc:
+        st.error(
+            f"Yahoo Finance is unavailable and the bundled snapshot cannot "
+            f"cover this request: {exc}"
+        )
+        st.stop()
     except Exception as exc:
         st.error(f"Failed to fetch data: {exc}")
         st.stop()
@@ -79,6 +85,13 @@ with st.spinner("Fetching data from Yahoo Finance…"):
 if stock_prices.empty:
     st.error("No data returned — check your tickers and date range.")
     st.stop()
+
+if used_fallback:
+    st.warning(
+        f"Yahoo Finance is unavailable — showing the bundled offline snapshot "
+        f"({stock_prices.index.min():%Y-%m-%d} → {stock_prices.index.max():%Y-%m-%d}). "
+        "These figures are not live."
+    )
 
 # ── Calculations ──────────────────────────────────────────────────────────────
 

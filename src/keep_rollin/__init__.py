@@ -4,7 +4,12 @@ Computes Sharpe ratio, Sortino ratio, max drawdown, and rolling variants
 against a configurable benchmark, using live data from Yahoo Finance.
 """
 
-from keep_rollin.data import fetch_prices
+from keep_rollin.data import (
+    FallbackUnavailable,
+    fetch_prices,
+    fetch_prices_with_fallback,
+    load_fallback_prices,
+)
 from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
@@ -16,7 +21,10 @@ from keep_rollin.metrics import (
 )
 
 __all__ = [
+    "FallbackUnavailable",
     "fetch_prices",
+    "fetch_prices_with_fallback",
+    "load_fallback_prices",
     "daily_returns",
     "excess_returns",
     "sharpe_ratio",

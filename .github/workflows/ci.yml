@@ -28,10 +28,10 @@ jobs:
         run: uv sync --extra dev --python ${{ matrix.python-version }}
 
       - name: Lint with ruff
-        run: uv run --python ${{ matrix.python-version }} ruff check src tests app.py
+        run: uv run --python ${{ matrix.python-version }} ruff check src tests scripts streamlit_app.py
 
       - name: Check formatting with ruff
-        run: uv run --python ${{ matrix.python-version }} ruff format --check src tests app.py
+        run: uv run --python ${{ matrix.python-version }} ruff format --check src tests scripts streamlit_app.py
 
       - name: Type check with mypy
         run: uv run --python ${{ matrix.python-version }} mypy src
