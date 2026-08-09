@@ -17,8 +17,6 @@ Computes annualised risk/return metrics for one or more assets against a configu
 
 Data is fetched live from Yahoo Finance, so any ticker and date range can be analysed without managing local CSV files.
 
-Originally completed as a DataCamp project in January 2022; the notebook is preserved in `notebooks/`.
-
 
 ## Installation
 
@@ -99,6 +97,4 @@ pyproject.toml
 
 ## Credits
 
-Original project tasks by Stefan Jansen for DataCamp.
-
-The data used in `notebooks/sharpe_ratio.ipynb` comes from two DataCamp CSV files covering Amazon and Facebook vs. the S&P 500 for the full year 2016.
+The project began as a DataCamp exercise on the Sharpe Ratio (original tasks by Stefan Jansen, completed in January 2022). Everything in this repository — the package structure, Sortino and rolling-window metrics, CLI, Streamlit app, containerisation, and CI — was written from scratch.

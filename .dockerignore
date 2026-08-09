@@ -12,7 +12,6 @@ __pycache__
 *.egg-info
 dist
 build
-notebooks
 tests
 .vscode
 .idea
