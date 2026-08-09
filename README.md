@@ -104,8 +104,6 @@ src/keep_rollin/
 tests/
     test_data.py
     test_metrics.py
-notebooks/
-    sharpe_ratio.ipynb         — original DataCamp submission
 pyproject.toml
 ```
 
