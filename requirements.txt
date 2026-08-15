@@ -1,0 +1,8 @@
+# Dependency file for Streamlit Community Cloud, which installs with pip and
+# does not read uv.lock.
+#
+# "." installs this project from pyproject.toml, which matters twice over: it
+# pulls in the runtime dependencies, and it puts `keep_rollin` on the import
+# path, which the src/ layout otherwise prevents. The [app] extra adds
+# Streamlit. Versions stay defined in pyproject.toml so this file cannot drift.
+.[app]
