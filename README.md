@@ -9,7 +9,7 @@
 
 ## Description
 
-Computes annualised risk/return metrics for one or more assets against a configurable benchmark:
+Computes annualised risk/return metrics for multi-asset portfolios, including rolling windows:
 
 - **Sharpe ratio** — excess return per unit of total volatility
 - **Sortino ratio** — excess return per unit of downside volatility (doesn't penalise upside)
@@ -17,7 +17,7 @@ Computes annualised risk/return metrics for one or more assets against a configu
 - **Rolling Sharpe ratio** — Sharpe ratio computed over a sliding window (default: 63 trading days ≈ 1 quarter)
 - **Rolling Sortino ratio** — same, but penalising only downside volatility within each window
 
-Data is fetched live from Yahoo Finance, so any ticker and date range can be analysed without managing local CSV files. If Yahoo Finance is unavailable, the dashboard falls back to a small price snapshot shipped with the package so it still renders — clearly flagged as offline data.
+Data is fetched live from Yahoo Finance. If Yahoo Finance is unavailable, the dashboard falls back to a small price snapshot shipped with the package so it still renders — clearly flagged as offline data.
 
 
 ## Installation
@@ -70,12 +70,11 @@ Then visit <http://localhost:8000/docs>.
 | `dashboard` (default) | Streamlit dashboard | 8501 | `/_stcore/health` |
 | `api` | FastAPI JSON API | 8000 | `/health` |
 
-They are separate images rather than one image with an overridable command because `CMD`, `EXPOSE` and `HEALTHCHECK` are baked in at build time — a single image would report itself unhealthy for whichever service it was not built for. The two targets share a dependency base, so building both is barely slower than building one, and each carries only its own extra: the API image has no Streamlit, the dashboard image has no FastAPI.
 
 **The `rollin` CLI ships in both images**, since it installs with the package. Override the command to use it without starting a server:
 
 ```bash
-docker run --rm keep-rollin rollin MSFT NVDA --start 2023-01-01 --end 2024-01-01
+docker run --rm keep-rollin rollin MSFT NVDA --start 2026-01-01 --end 2026-08-14
 ```
 
 Both images run as a non-root user and include the bundled offline price snapshot, so the fallback works in the container too.
@@ -89,8 +88,6 @@ sudo usermod -aG docker $USER   # then log out and back in, or run: newgrp docke
 
 `docker-buildx` is not optional here. The build needs [BuildKit](https://docs.docker.com/build/buildkit/): the Dockerfile opens with a `# syntax=docker/dockerfile:1.6` frontend directive and uses `RUN --mount=type=cache` to reuse uv's download cache between builds. Any Docker with buildx available works — Docker CE from [Docker's apt repository](https://docs.docker.com/engine/install/ubuntu/) and Docker Desktop both ship it too, and are worth preferring if you want upstream-latest releases or a GUI.
 
-Avoid the Docker snap under WSL: snapd is unreliable there. `podman-docker` runs containers fine but is a CLI emulation — Buildah ignores the `# syntax=` directive, so it does not validate this Dockerfile faithfully.
-
 On WSL2 the daemon needs systemd, which is enabled by putting this in `/etc/wsl.conf` and running `wsl --shutdown` from PowerShell:
 
 ```ini
@@ -101,7 +98,7 @@ systemd=true
 ### CLI
 
 ```bash
-rollin MSFT NVDA --benchmark ^GSPC --start 2023-01-01 --end 2024-01-01
+rollin MSFT NVDA --benchmark ^GSPC --start 2026-01-01 --end 2026-08-14
 ```
 
 Options:
@@ -125,7 +122,7 @@ uv run uvicorn keep_rollin.api:app --reload
 Interactive docs at <http://localhost:8000/docs>.
 
 ```bash
-curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2023-01-01&end=2024-01-01"
+curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2026-01-01&end=2026-08-14"
 ```
 
 | Endpoint | Description |
@@ -172,26 +169,31 @@ uv run pytest --cov=keep_rollin
 ## Project structure
 
 ```
-.github/workflows/ci.yml       — pytest on push/PR (Python 3.10 and 3.13)
+.github/workflows/ci.yml        — ruff, mypy and pytest on push/PR (Python 3.10 and 3.13)
 Dockerfile                      — multi-stage build; dashboard and api targets
-streamlit_app.py               — Streamlit dashboard
+streamlit_app.py                — Streamlit dashboard
+docs/img/
+    dashboard.png               — screenshot used in this README
 scripts/
-    refresh_fallback.py        — regenerate the offline price snapshot
+    refresh_fallback.py         — regenerate the offline price snapshot
 src/keep_rollin/
-    data.py                    — fetch adjusted close prices, with offline fallback
-    metrics.py                 — Sharpe, Sortino, max drawdown, rolling variants, shared summary
-    cli.py                     — command-line entry point
-    api.py                     — FastAPI layer exposing the same metrics over HTTP
+    data.py                     — fetch adjusted close prices, shared defaults, offline fallback
+    metrics.py                  — Sharpe, Sortino, max drawdown, rolling variants, shared summary
+    cli.py                      — command-line entry point
+    api.py                      — FastAPI layer exposing the same metrics over HTTP
     resources/
         fallback_prices.parquet — offline snapshot used when Yahoo Finance is down
 tests/
     test_api.py
+    test_cli.py
     test_data.py
     test_metrics.py
-pyproject.toml
+pyproject.toml                  — project metadata, dependencies and optional extras
+uv.lock                         — pinned dependency versions
+requirements.txt                — pip entry point for Streamlit Community Cloud
 ```
 
 
 ## Credits
 
-The project began as a DataCamp exercise on the Sharpe Ratio (original tasks by Stefan Jansen, completed in January 2022). Everything in this repository — the package structure, Sortino and rolling-window metrics, CLI, Streamlit app, containerisation, and CI — was written from scratch.
+The project was inspired by a DataCamp exercise on the Sharpe Ratio (original tasks by Stefan Jansen, completed in January 2022). However, everything in this repository was written from scratch.
