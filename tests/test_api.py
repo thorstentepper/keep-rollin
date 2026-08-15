@@ -303,6 +303,35 @@ def test_fetch_uses_an_explicit_timeout(mock_dl):
 
 
 @patch("keep_rollin.data.yf.download")
+def test_undefined_metrics_return_a_note_not_an_error(mock_dl):
+    """A flat series leaves every metric undefined; that is data, not a failure."""
+    n = 60
+    dates = pd.date_range("2024-01-01", periods=n, freq="B")
+    frame = pd.DataFrame(
+        {"FLAT": np.full(n, 100.0), BENCHMARK: np.full(n, 100.0)}, index=dates
+    )
+    frame.columns = pd.MultiIndex.from_arrays([["Close"] * 2, ["FLAT", BENCHMARK]])
+    mock_dl.return_value = frame
+
+    response = client.get("/metrics", params=_params(tickers=["FLAT"]))
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["best_sharpe"] is None
+    assert body["note"] is not None
+    assert "flat" in body["note"]
+    assert body["assets"][0]["sharpe"] is None
+
+
+@patch("keep_rollin.data.yf.download")
+def test_no_note_when_ranking_succeeds(mock_dl):
+    mock_dl.return_value = _prices(TICKERS + [BENCHMARK])
+    body = client.get("/metrics", params=_params()).json()
+    assert body["best_sharpe"] is not None
+    assert body["note"] is None
+
+
+@patch("keep_rollin.data.yf.download")
 def test_non_finite_metrics_serialise_as_null(mock_dl):
     """Sortino is infinite without downside returns; JSON cannot hold inf."""
     n = 300
