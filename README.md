@@ -4,8 +4,10 @@
 [![codecov](https://codecov.io/gh/thorstentepper/keep-rollin/branch/main/graph/badge.svg)](https://codecov.io/gh/thorstentepper/keep-rollin)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://keep-rollin.streamlit.app/)
 
-![Keep Rollin' dashboard](docs/img/dashboard.png)
+[![Keep Rollin' dashboard](docs/img/dashboard.png)](https://keep-rollin.streamlit.app/)
+
 
 ## Description
 
@@ -82,17 +84,8 @@ Both images run as a non-root user and include the bundled offline price snapsho
 **Installing Docker.** On Debian/Ubuntu (including WSL2), the distro packages are enough:
 
 ```bash
-sudo apt install docker.io docker-buildx
+sudo apt install docker.io docker-buildx   # buildx is required because the Dockerfile uses BuildKit cache mounts
 sudo usermod -aG docker $USER   # then log out and back in, or run: newgrp docker
-```
-
-`docker-buildx` is not optional here. The build needs [BuildKit](https://docs.docker.com/build/buildkit/): the Dockerfile opens with a `# syntax=docker/dockerfile:1.6` frontend directive and uses `RUN --mount=type=cache` to reuse uv's download cache between builds. Any Docker with buildx available works — Docker CE from [Docker's apt repository](https://docs.docker.com/engine/install/ubuntu/) and Docker Desktop both ship it too, and are worth preferring if you want upstream-latest releases or a GUI.
-
-On WSL2 the daemon needs systemd, which is enabled by putting this in `/etc/wsl.conf` and running `wsl --shutdown` from PowerShell:
-
-```ini
-[boot]
-systemd=true
 ```
 
 ### CLI
@@ -110,7 +103,6 @@ Options:
 | `--end` | required | End date `YYYY-MM-DD` |
 | `--rolling-window` | `63` | Rolling window in trading days (for both Sharpe and Sortino) |
 | `--plot` | off | Display rolling Sharpe and Sortino ratio charts |
-
 
 ### HTTP API
 
