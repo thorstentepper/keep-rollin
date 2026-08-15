@@ -3,17 +3,14 @@ from __future__ import annotations
 import argparse
 
 import matplotlib.pyplot as plt
-import pandas as pd
 
 from keep_rollin.data import fetch_prices
 from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
-    max_drawdown,
     rolling_sharpe_ratio,
     rolling_sortino_ratio,
-    sharpe_ratio,
-    sortino_ratio,
+    summarise,
 )
 
 
@@ -56,21 +53,19 @@ def main(argv: list[str] | None = None) -> None:
         args.tickers, args.benchmark, args.start, args.end
     )
 
-    stock_ret = daily_returns(stock_prices)
-    bench_ret = daily_returns(benchmark_prices)
-    exc = excess_returns(stock_ret, bench_ret)
-
-    rolling_sharpe = rolling_sharpe_ratio(exc, window=args.rolling_window)
-    rolling_sortino = rolling_sortino_ratio(exc, window=args.rolling_window)
-    results = pd.DataFrame(
-        {
-            "Sharpe (ann.)": sharpe_ratio(exc),
-            "Sortino (ann.)": sortino_ratio(exc),
-            "Max Drawdown": max_drawdown(stock_prices),
-            f"Avg Rolling Sharpe ({args.rolling_window}d)": rolling_sharpe.mean(),
-            f"Avg Rolling Sortino ({args.rolling_window}d)": rolling_sortino.mean(),
-        }
-    ).round(2)
+    results = (
+        summarise(stock_prices, benchmark_prices, window=args.rolling_window)
+        .rename(
+            columns={
+                "sharpe": "Sharpe (ann.)",
+                "sortino": "Sortino (ann.)",
+                "max_drawdown": "Max Drawdown",
+                "avg_rolling_sharpe": f"Avg Rolling Sharpe ({args.rolling_window}d)",
+                "avg_rolling_sortino": f"Avg Rolling Sortino ({args.rolling_window}d)",
+            }
+        )
+        .round(2)
+    )
 
     print("\n--- Results ---")
     print(results.to_string())
@@ -78,6 +73,13 @@ def main(argv: list[str] | None = None) -> None:
     print(f"\nHighest Sharpe ratio: {best} ({results.loc[best, 'Sharpe (ann.)']:.2f})")
 
     if args.plot:
+        # The summary keeps only window averages, so recompute the series.
+        exc = excess_returns(
+            daily_returns(stock_prices), daily_returns(benchmark_prices)
+        )
+        rolling_sharpe = rolling_sharpe_ratio(exc, window=args.rolling_window)
+        rolling_sortino = rolling_sortino_ratio(exc, window=args.rolling_window)
+
         fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
         rolling_sharpe.plot(
             ax=axes[0], title=f"Rolling Sharpe ({args.rolling_window}-day window)"

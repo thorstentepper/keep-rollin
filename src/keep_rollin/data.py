@@ -10,6 +10,15 @@ import yfinance as yf
 FALLBACK_PACKAGE = "keep_rollin.resources"
 FALLBACK_RESOURCE = "fallback_prices.parquet"
 
+#: Per-request timeout for Yahoo Finance calls, in seconds.
+#:
+#: yfinance currently defaults to 10s, but that is an upstream default we do
+#: not control and it has no stability guarantee. Passing it explicitly pins
+#: the behaviour and puts it in one place to tune. Note this bounds each HTTP
+#: request, not the whole download: a multi-ticker fetch issues several, so
+#: total wall time can exceed it.
+FETCH_TIMEOUT_SECONDS = 10
+
 # Two rows is the bare minimum for a single daily return; anything less is not
 # a usable series, so a narrower slice falls back to the full snapshot.
 _MIN_FALLBACK_ROWS = 2
@@ -52,6 +61,7 @@ def fetch_prices(
         end=end,
         auto_adjust=True,
         progress=False,
+        timeout=FETCH_TIMEOUT_SECONDS,
     )
     close = raw["Close"]
     return close[list(tickers)].dropna(), close[benchmark].dropna()
