@@ -22,7 +22,5 @@ SOFTWARE.
 
 ---
 
-Note: This project refactors and extends a DataCamp exercise originally
-designed by Stefan Jansen. The exercise concepts and original notebook are
-from DataCamp; the refactored implementation (package structure, tests, CLI,
-Streamlit app, Docker setup, CI/CD) is original work.
+Note: This project was inspired by a DataCamp exercise originally designed by
+Stefan Jansen. However, everything in this repository was written from scratch.
