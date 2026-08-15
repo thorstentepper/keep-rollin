@@ -21,7 +21,7 @@ Data is fetched live from Yahoo Finance, so any ticker and date range can be ana
 ## Installation
 
 ```bash
-uv sync --all-extras          # library + CLI + dev tools + Streamlit
+uv sync --all-extras          # library + CLI + dev tools + Streamlit + API
 ```
 
 Or install a minimal set:
@@ -67,6 +67,38 @@ Options:
 | `--plot` | off | Display rolling Sharpe and Sortino ratio charts |
 
 
+### HTTP API
+
+```bash
+uv sync --extra api
+uv run uvicorn keep_rollin.api:app --reload
+```
+
+Interactive docs at <http://localhost:8000/docs>.
+
+```bash
+curl "http://localhost:8000/metrics?tickers=AMZN&tickers=META&start=2023-01-01&end=2024-01-01"
+```
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /metrics` | Same metrics as the CLI, as JSON — one object per asset |
+| `GET /health` | Liveness probe; also reports whether the offline snapshot is present |
+
+Query parameters for `/metrics`:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `tickers` | required | Yahoo Finance symbol; repeat the parameter for several |
+| `start` | required | Start date `YYYY-MM-DD` |
+| `end` | required | End date `YYYY-MM-DD` |
+| `benchmark` | `^GSPC` | Benchmark symbol |
+| `rolling_window` | `63` | Rolling window in trading days (2–252) |
+
+The response includes `used_fallback`, which is `true` when live data was unavailable and the offline snapshot was served instead. Metrics that are mathematically undefined for the data (an infinite Sortino ratio, for instance) are returned as `null`.
+
+Price fetches are cached in-process for 15 minutes, keyed on tickers, benchmark and date range — daily closes don't change intraday, and this keeps repeated requests off Yahoo Finance's rate limiter. Responses carry an `X-Cache: HIT|MISS` header. Offline-snapshot results are cached for only 60 seconds, so the API returns to live figures shortly after Yahoo Finance recovers. The cache is per-process, so it is not shared across multiple workers.
+
 ### Refreshing the offline snapshot
 
 The bundled snapshot backs the dashboard when Yahoo Finance is unavailable. Regenerate it with:
@@ -97,11 +129,13 @@ scripts/
     refresh_fallback.py        — regenerate the offline price snapshot
 src/keep_rollin/
     data.py                    — fetch adjusted close prices, with offline fallback
-    metrics.py                 — Sharpe, Sortino, max drawdown, rolling Sharpe, rolling Sortino
+    metrics.py                 — Sharpe, Sortino, max drawdown, rolling variants, shared summary
     cli.py                     — command-line entry point
+    api.py                     — FastAPI layer exposing the same metrics over HTTP
     resources/
         fallback_prices.parquet — offline snapshot used when Yahoo Finance is down
 tests/
+    test_api.py
     test_data.py
     test_metrics.py
 pyproject.toml

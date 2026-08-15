@@ -72,3 +72,53 @@ def max_drawdown(prices: pd.DataFrame) -> pd.Series:
     cumulative = (1 + prices.pct_change().fillna(0)).cumprod()
     rolling_max = cumulative.cummax()
     return ((cumulative - rolling_max) / rolling_max).min()
+
+
+#: Column order of :func:`summarise`, using stable machine-readable names.
+SUMMARY_COLUMNS = (
+    "sharpe",
+    "sortino",
+    "max_drawdown",
+    "avg_rolling_sharpe",
+    "avg_rolling_sortino",
+)
+
+
+def summarise(
+    stock_prices: pd.DataFrame,
+    benchmark_prices: pd.Series,
+    window: int = 63,
+) -> pd.DataFrame:
+    """Compute the full metrics table for a set of assets against a benchmark.
+
+    This is the single definition of "the metrics" shared by the CLI, the
+    Streamlit dashboard, and the HTTP API, so all three cannot drift apart.
+    Values are unrounded; presentation layers round as they see fit.
+
+    Parameters
+    ----------
+    stock_prices:
+        Adjusted close prices, one column per asset.
+    benchmark_prices:
+        Adjusted close prices for the benchmark.
+    window:
+        Rolling window in trading days.
+
+    Returns
+    -------
+    DataFrame indexed by ticker with the columns in :data:`SUMMARY_COLUMNS`.
+    """
+    stock_ret = daily_returns(stock_prices)
+    bench_ret = daily_returns(benchmark_prices)
+    exc = excess_returns(stock_ret, bench_ret)
+
+    return pd.DataFrame(
+        {
+            "sharpe": sharpe_ratio(exc),
+            "sortino": sortino_ratio(exc),
+            "max_drawdown": max_drawdown(stock_prices),
+            "avg_rolling_sharpe": rolling_sharpe_ratio(exc, window=window).mean(),
+            "avg_rolling_sortino": rolling_sortino_ratio(exc, window=window).mean(),
+        },
+        columns=list(SUMMARY_COLUMNS),
+    )

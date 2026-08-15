@@ -10,11 +10,9 @@ from keep_rollin.data import FallbackUnavailable, fetch_prices_with_fallback
 from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
-    max_drawdown,
     rolling_sharpe_ratio,
     rolling_sortino_ratio,
-    sharpe_ratio,
-    sortino_ratio,
+    summarise,
 )
 
 st.set_page_config(page_title="keep-rollin", layout="wide")
@@ -57,7 +55,9 @@ if end <= start:
 # ── Data fetching ─────────────────────────────────────────────────────────────
 
 
-@st.cache_data
+# The TTL matters: without it a fallback result would be cached for the life of
+# the process, pinning the offline snapshot long after Yahoo Finance recovered.
+@st.cache_data(ttl=900)
 def load(
     tickers: tuple[str, ...],
     benchmark: str,
@@ -101,15 +101,19 @@ exc = excess_returns(stock_ret, bench_ret)
 rolling_sharpe = rolling_sharpe_ratio(exc, window=window)
 rolling_sortino = rolling_sortino_ratio(exc, window=window)
 
-results = pd.DataFrame(
-    {
-        "Sharpe (ann.)": sharpe_ratio(exc),
-        "Sortino (ann.)": sortino_ratio(exc),
-        "Max Drawdown": max_drawdown(stock_prices),
-        f"Avg Rolling Sharpe ({window}d)": rolling_sharpe.mean(),
-        f"Avg Rolling Sortino ({window}d)": rolling_sortino.mean(),
-    }
-).round(2)
+results = (
+    summarise(stock_prices, benchmark_prices, window=window)
+    .rename(
+        columns={
+            "sharpe": "Sharpe (ann.)",
+            "sortino": "Sortino (ann.)",
+            "max_drawdown": "Max Drawdown",
+            "avg_rolling_sharpe": f"Avg Rolling Sharpe ({window}d)",
+            "avg_rolling_sortino": f"Avg Rolling Sortino ({window}d)",
+        }
+    )
+    .round(2)
+)
 
 # ── Results table ─────────────────────────────────────────────────────────────
 

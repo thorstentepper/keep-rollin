@@ -18,6 +18,7 @@ from keep_rollin.metrics import (
     rolling_sortino_ratio,
     sortino_ratio,
     max_drawdown,
+    summarise,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "rolling_sortino_ratio",
     "sortino_ratio",
     "max_drawdown",
+    "summarise",
 ]
