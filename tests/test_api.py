@@ -10,10 +10,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from keep_rollin.api import app, clear_cache
+from keep_rollin.data import default_date_range
 
 client = TestClient(app)
 
-TICKERS = ["AMZN", "META"]
+TICKERS = ["MSFT", "NVDA"]
 BENCHMARK = "^GSPC"
 
 
@@ -99,7 +100,7 @@ def test_rolling_window_is_honoured(mock_dl):
 def test_tickers_are_normalised_and_deduplicated(mock_dl):
     mock_dl.return_value = _prices(TICKERS + [BENCHMARK])
     body = client.get(
-        "/metrics", params=_params(tickers=["amzn", " AMZN ", "meta"])
+        "/metrics", params=_params(tickers=["msft", " MSFT ", "nvda"])
     ).json()
     assert [a["ticker"] for a in body["assets"]] == TICKERS
 
@@ -122,6 +123,56 @@ def test_unservable_symbols_return_503(mock_dl):
     assert "NOPE" in response.json()["detail"]
 
 
+@patch("keep_rollin.data.yf.download")
+def test_metrics_works_with_no_parameters_at_all(mock_dl):
+    """GET /metrics bare must return the default tickers over the default window."""
+    from keep_rollin.data import DEFAULT_TICKERS, default_date_range
+
+    mock_dl.return_value = _prices(list(DEFAULT_TICKERS) + [BENCHMARK])
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [a["ticker"] for a in body["assets"]] == list(DEFAULT_TICKERS)
+
+    expected_start, expected_end = default_date_range()
+    assert body["start"] == str(expected_start)
+    assert body["end"] == str(expected_end)
+    assert body["benchmark"] == "^GSPC"
+
+
+@patch("keep_rollin.data.yf.download")
+def test_default_window_spans_five_years(mock_dl):
+    mock_dl.return_value = _prices(TICKERS + [BENCHMARK])
+    body = client.get("/metrics").json()
+    start = datetime.date.fromisoformat(body["start"])
+    end = datetime.date.fromisoformat(body["end"])
+    assert end.year - start.year == 5
+
+
+@patch("keep_rollin.data.yf.download")
+def test_dates_default_independently(mock_dl):
+    """Supplying only one date still yields a usable window."""
+    mock_dl.return_value = _prices(TICKERS + [BENCHMARK])
+
+    only_start = client.get("/metrics", params={"start": "2024-01-01"}).json()
+    assert only_start["start"] == "2024-01-01"
+    assert only_start["end"] == str(default_date_range()[1])
+
+    only_end = client.get("/metrics", params={"end": "2024-01-01"}).json()
+    assert only_end["end"] == "2024-01-01"
+    assert only_end["start"] == str(default_date_range()[0])
+
+
+@patch("keep_rollin.data.yf.download")
+def test_explicit_parameters_still_win(mock_dl):
+    mock_dl.return_value = _prices(TICKERS + [BENCHMARK])
+    body = client.get("/metrics", params=_params(tickers=["MSFT"])).json()
+    assert [a["ticker"] for a in body["assets"]] == ["MSFT"]
+    assert body["start"] == "2020-01-01"
+    assert body["end"] == "2021-01-01"
+
+
 def test_end_before_start_is_rejected():
     response = client.get(
         "/metrics", params=_params(start="2021-01-01", end="2020-01-01")
@@ -129,10 +180,9 @@ def test_end_before_start_is_rejected():
     assert response.status_code == 422
 
 
-def test_missing_tickers_is_rejected():
-    response = client.get(
-        "/metrics", params={"start": "2020-01-01", "end": "2021-01-01"}
-    )
+def test_blank_tickers_are_rejected():
+    """Omitting tickers falls back to the defaults, but asking for nothing is an error."""
+    response = client.get("/metrics", params=_params(tickers=["", "  "]))
     assert response.status_code == 422
 
 
@@ -260,15 +310,15 @@ def test_non_finite_metrics_serialise_as_null(mock_dl):
     # Asset rises every day, benchmark is flat -> excess returns never negative.
     frame = pd.DataFrame(
         {
-            "AMZN": 100.0 * np.cumprod(np.full(n, 1.01)),
+            "MSFT": 100.0 * np.cumprod(np.full(n, 1.01)),
             BENCHMARK: np.full(n, 100.0),
         },
         index=dates,
     )
-    frame.columns = pd.MultiIndex.from_arrays([["Close"] * 2, ["AMZN", BENCHMARK]])
+    frame.columns = pd.MultiIndex.from_arrays([["Close"] * 2, ["MSFT", BENCHMARK]])
     mock_dl.return_value = frame
 
-    response = client.get("/metrics", params=_params(tickers=["AMZN"]))
+    response = client.get("/metrics", params=_params(tickers=["MSFT"]))
     assert response.status_code == 200
     # Valid JSON with no bare NaN/Infinity tokens.
     assert b"Infinity" not in response.content

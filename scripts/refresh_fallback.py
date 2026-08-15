@@ -25,11 +25,12 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from keep_rollin.data import fetch_prices
-
-DEFAULT_TICKERS = ["AMZN", "META"]
-DEFAULT_BENCHMARK = "^GSPC"
-DEFAULT_YEARS = 5
+from keep_rollin.data import (
+    DEFAULT_BENCHMARK,
+    DEFAULT_TICKERS,
+    default_date_range,
+    fetch_prices,
+)
 
 # A 252-day rolling window needs at least that many rows before it yields a
 # single value, so a snapshot shorter than this would render empty charts.
@@ -42,7 +43,7 @@ DEFAULT_OUTPUT = (
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    today = datetime.date.today()
+    start, end = default_date_range()
     parser = argparse.ArgumentParser(
         description="Regenerate the bundled fallback price snapshot.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -50,7 +51,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "tickers",
         nargs="*",
-        default=DEFAULT_TICKERS,
+        default=list(DEFAULT_TICKERS),
         help="Yahoo Finance ticker symbols to snapshot",
     )
     parser.add_argument(
@@ -60,12 +61,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--start",
-        default=str(today.replace(year=today.year - DEFAULT_YEARS)),
+        default=str(start),
         help="Start date YYYY-MM-DD",
     )
     parser.add_argument(
         "--end",
-        default=str(today),
+        default=str(end),
         help="End date YYYY-MM-DD",
     )
     parser.add_argument(

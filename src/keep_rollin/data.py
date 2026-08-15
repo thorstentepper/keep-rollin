@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import datetime
 import warnings
 from importlib import resources
 from typing import Sequence
 
+import numpy as np
 import pandas as pd
 import yfinance as yf
 
 FALLBACK_PACKAGE = "keep_rollin.resources"
 FALLBACK_RESOURCE = "fallback_prices.parquet"
+
+#: Symbols analysed when the caller does not name any.
+DEFAULT_TICKERS = ("MSFT", "NVDA")
+
+#: Benchmark used when the caller does not name one (S&P 500).
+DEFAULT_BENCHMARK = "^GSPC"
+
+#: Years of history covered by the default analysis window.
+DEFAULT_HISTORY_YEARS = 5
 
 #: Per-request timeout for Yahoo Finance calls, in seconds.
 #:
@@ -26,6 +37,42 @@ _MIN_FALLBACK_ROWS = 2
 
 class FallbackUnavailable(RuntimeError):
     """The bundled snapshot cannot serve the requested tickers."""
+
+
+def previous_trading_day(reference: datetime.date | None = None) -> datetime.date:
+    """The most recent trading day strictly before ``reference`` (default today).
+
+    Trading days are approximated as weekdays. Exchange holidays are *not*
+    excluded — pricing that in would mean shipping a market calendar per
+    exchange. The cost of being wrong is one stale-by-a-day default, and
+    Yahoo Finance simply returns no row for a holiday.
+
+    Called on a weekend, this returns the preceding Friday rather than
+    stepping a further day back.
+    """
+    ref = reference if reference is not None else datetime.date.today()
+    # roll="forward" first moves a weekend onto Monday, so the -1 offset lands
+    # on the Friday. roll="backward" would overshoot to the Thursday.
+    result: datetime.date = np.busday_offset(ref, -1, roll="forward").astype(object)
+    return result
+
+
+def default_date_range(
+    reference: datetime.date | None = None,
+    years: int = DEFAULT_HISTORY_YEARS,
+) -> tuple[datetime.date, datetime.date]:
+    """Default analysis window: ``years`` of history to the previous trading day.
+
+    Returns ``(start, end)``. Note that ``end`` is exclusive when passed to
+    :func:`fetch_prices`, matching Yahoo Finance's own convention.
+    """
+    end = previous_trading_day(reference)
+    try:
+        start = end.replace(year=end.year - years)
+    except ValueError:
+        # 29 February has no counterpart in a non-leap year.
+        start = end.replace(year=end.year - years, day=28)
+    return start, end
 
 
 def fetch_prices(
