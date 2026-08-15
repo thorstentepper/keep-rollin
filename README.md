@@ -41,7 +41,7 @@ uv run streamlit run streamlit_app.py
 
 Opens an interactive dashboard in your browser: pick tickers, benchmark, date range, and rolling window from the sidebar and click **Analyse**.
 
-#### Docker
+### Docker
 
 ```bash
 docker build -t keep-rollin .
@@ -49,6 +49,24 @@ docker run --rm -p 8501:8501 keep-rollin
 ```
 
 Then visit <http://localhost:8501>. The image runs as a non-root user and includes a healthcheck on Streamlit's `/_stcore/health` endpoint.
+
+**Installing Docker.** On Debian/Ubuntu (including WSL2), the distro packages are enough:
+
+```bash
+sudo apt install docker.io docker-buildx
+sudo usermod -aG docker $USER   # then log out and back in, or run: newgrp docker
+```
+
+`docker-buildx` is not optional here. The build needs [BuildKit](https://docs.docker.com/build/buildkit/): the Dockerfile opens with a `# syntax=docker/dockerfile:1.6` frontend directive and uses `RUN --mount=type=cache` to reuse uv's download cache between builds. Any Docker with buildx available works — Docker CE from [Docker's apt repository](https://docs.docker.com/engine/install/ubuntu/) and Docker Desktop both ship it too, and are worth preferring if you want upstream-latest releases or a GUI.
+
+Avoid the Docker snap under WSL: snapd is unreliable there. `podman-docker` runs containers fine but is a CLI emulation — Buildah ignores the `# syntax=` directive, so it does not validate this Dockerfile faithfully.
+
+On WSL2 the daemon needs systemd, which is enabled by putting this in `/etc/wsl.conf` and running `wsl --shutdown` from PowerShell:
+
+```ini
+[boot]
+systemd=true
+```
 
 ### CLI
 
