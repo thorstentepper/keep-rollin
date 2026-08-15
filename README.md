@@ -43,12 +43,38 @@ Opens an interactive dashboard in your browser: pick tickers, benchmark, date ra
 
 ### Docker
 
+The Dockerfile has two runtime targets. The dashboard is the default:
+
 ```bash
 docker build -t keep-rollin .
 docker run --rm -p 8501:8501 keep-rollin
 ```
 
-Then visit <http://localhost:8501>. The image runs as a non-root user and includes a healthcheck on Streamlit's `/_stcore/health` endpoint.
+Then visit <http://localhost:8501>.
+
+The API is a separate target:
+
+```bash
+docker build --target api -t keep-rollin:api .
+docker run --rm -p 8000:8000 keep-rollin:api
+```
+
+Then visit <http://localhost:8000/docs>.
+
+| Target | Serves | Port | Healthcheck |
+|--------|--------|------|-------------|
+| `dashboard` (default) | Streamlit dashboard | 8501 | `/_stcore/health` |
+| `api` | FastAPI JSON API | 8000 | `/health` |
+
+They are separate images rather than one image with an overridable command because `CMD`, `EXPOSE` and `HEALTHCHECK` are baked in at build time — a single image would report itself unhealthy for whichever service it was not built for. The two targets share a dependency base, so building both is barely slower than building one, and each carries only its own extra: the API image has no Streamlit, the dashboard image has no FastAPI.
+
+**The `rollin` CLI ships in both images**, since it installs with the package. Override the command to use it without starting a server:
+
+```bash
+docker run --rm keep-rollin rollin AMZN META --start 2023-01-01 --end 2024-01-01
+```
+
+Both images run as a non-root user and include the bundled offline price snapshot, so the fallback works in the container too.
 
 **Installing Docker.** On Debian/Ubuntu (including WSL2), the distro packages are enough:
 
@@ -141,7 +167,7 @@ uv run pytest --cov=keep_rollin
 
 ```
 .github/workflows/ci.yml       — pytest on push/PR (Python 3.10 and 3.13)
-Dockerfile                      — multi-stage build for Streamlit app
+Dockerfile                      — multi-stage build; dashboard and api targets
 streamlit_app.py               — Streamlit dashboard
 scripts/
     refresh_fallback.py        — regenerate the offline price snapshot
