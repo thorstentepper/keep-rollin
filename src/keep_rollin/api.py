@@ -36,7 +36,7 @@ from keep_rollin.data import (
     default_date_range,
     fetch_prices_with_fallback,
 )
-from keep_rollin.metrics import summarise
+from keep_rollin.metrics import NO_LEADER_EXPLANATION, leader, summarise
 
 DEFAULT_WINDOW = 63
 
@@ -90,6 +90,13 @@ class MetricsResponse(BaseModel):
     )
     best_sharpe: str | None = Field(
         description="Ticker with the highest Sharpe ratio, if any is defined"
+    )
+    note: str | None = Field(
+        default=None,
+        description=(
+            "Set when no ranking was possible, explaining why the metrics "
+            "came back undefined"
+        ),
     )
     assets: list[AssetMetrics]
 
@@ -295,8 +302,7 @@ def metrics(
 
     summary = summarise(stock_prices, benchmark_prices, window=rolling_window)
 
-    sharpe = summary["sharpe"]
-    best_sharpe = str(sharpe.idxmax()) if bool(sharpe.notna().any()) else None
+    best_sharpe = leader(summary["sharpe"])
 
     assets = [
         AssetMetrics(
@@ -314,5 +320,6 @@ def metrics(
         observations=len(stock_prices),
         used_fallback=used_fallback,
         best_sharpe=best_sharpe,
+        note=None if best_sharpe else NO_LEADER_EXPLANATION,
         assets=assets,
     )

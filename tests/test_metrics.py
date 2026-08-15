@@ -7,6 +7,7 @@ import pytest
 from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
+    leader,
     max_drawdown,
     rolling_sharpe_ratio,
     rolling_sortino_ratio,
@@ -153,3 +154,27 @@ class TestMaxDrawdown:
         prices = pd.DataFrame({"A": [100.0, 90.0, 80.0, 70.0]})
         expected = (70 - 100) / 100  # -0.30
         assert abs(max_drawdown(prices)["A"] - expected) < 1e-10
+
+
+class TestLeader:
+    """Ranking must survive columns that are undefined in whole or in part."""
+
+    def test_picks_the_highest_value(self):
+        assert leader(pd.Series({"A": 0.5, "B": 1.5, "C": -2.0})) == "B"
+
+    def test_all_undefined_returns_none(self):
+        """An all-NA column is a real outcome, not a crash."""
+        assert leader(pd.Series({"A": np.nan, "B": np.nan})) is None
+
+    def test_partly_undefined_still_ranks(self):
+        assert leader(pd.Series({"A": np.nan, "B": 0.3})) == "B"
+
+    def test_empty_series_returns_none(self):
+        assert leader(pd.Series(dtype=float)) is None
+
+    def test_infinite_values_can_win(self):
+        """Sortino is legitimately infinite when a window has no downside."""
+        assert leader(pd.Series({"A": 2.0, "B": np.inf})) == "B"
+
+    def test_returns_a_plain_string(self):
+        assert isinstance(leader(pd.Series({"A": 1.0})), str)

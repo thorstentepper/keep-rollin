@@ -12,16 +12,21 @@ from keep_rollin.data import (
     fetch_prices_with_fallback,
 )
 from keep_rollin.metrics import (
+    NO_LEADER_EXPLANATION,
     daily_returns,
     excess_returns,
+    leader,
     rolling_sharpe_ratio,
     rolling_sortino_ratio,
     summarise,
 )
 
-st.set_page_config(page_title="keep-rollin", layout="wide")
-st.title("keep-rollin")
-st.caption("Annualised risk/return metrics for multi-asset portfolios")
+st.set_page_config(page_title="Keep Rollin'", layout="wide")
+st.title("Keep Rollin'")
+st.caption(
+    "Annualised risk/return metrics for multi-asset portfolios, "
+    "including rolling windows."
+)
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -121,11 +126,25 @@ results = (
 
 # ── Results table ─────────────────────────────────────────────────────────────
 
-best = results["Sharpe (ann.)"].idxmax()
+best_sharpe = leader(results["Sharpe (ann.)"])
+best_sortino = leader(results["Sortino (ann.)"])
 
 st.subheader("Summary")
 st.dataframe(results, width="stretch")
-st.caption(f"Highest Sharpe: **{best}** ({results.loc[best, 'Sharpe (ann.)']:.2f})")
+
+if best_sharpe is None and best_sortino is None:
+    st.warning(f"No ranked result — {NO_LEADER_EXPLANATION}.")
+else:
+    if best_sharpe is not None:
+        st.caption(
+            f"Highest Sharpe: **{best_sharpe}** "
+            f"({results.loc[best_sharpe, 'Sharpe (ann.)']:.2f})"
+        )
+    if best_sortino is not None:
+        st.caption(
+            f"Highest Sortino: **{best_sortino}** "
+            f"({results.loc[best_sortino, 'Sortino (ann.)']:.2f})"
+        )
 
 # ── Rolling charts ────────────────────────────────────────────────────────────
 

@@ -74,6 +74,30 @@ def max_drawdown(prices: pd.DataFrame) -> pd.Series:
     return ((cumulative - rolling_max) / rolling_max).min()
 
 
+#: Why a metric column can come back entirely undefined. Shared so every
+#: surface explains the same situation the same way.
+NO_LEADER_EXPLANATION = (
+    "none of the requested tickers produced valid excess returns over this "
+    "range; the price series may be flat, or the range too short"
+)
+
+
+def leader(values: pd.Series) -> str | None:
+    """Label of the highest value, or ``None`` when every value is undefined.
+
+    ``Series.idxmax`` raises on an all-NA column, which is a real outcome here
+    rather than a bug: a flat price series or a range too short to yield
+    returns leaves Sharpe and Sortino undefined. Callers get ``None`` and can
+    say so instead of crashing.
+
+    A column that is only *partly* undefined still ranks: the undefined
+    entries are skipped, matching ``idxmax``.
+    """
+    if not bool(values.notna().any()):
+        return None
+    return str(values.idxmax())
+
+
 #: Column order of :func:`summarise`, using stable machine-readable names.
 SUMMARY_COLUMNS = (
     "sharpe",

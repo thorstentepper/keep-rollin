@@ -6,8 +6,10 @@ import matplotlib.pyplot as plt
 
 from keep_rollin.data import fetch_prices
 from keep_rollin.metrics import (
+    NO_LEADER_EXPLANATION,
     daily_returns,
     excess_returns,
+    leader,
     rolling_sharpe_ratio,
     rolling_sortino_ratio,
     summarise,
@@ -69,8 +71,14 @@ def main(argv: list[str] | None = None) -> None:
 
     print("\n--- Results ---")
     print(results.to_string())
-    best = results["Sharpe (ann.)"].idxmax()
-    print(f"\nHighest Sharpe ratio: {best} ({results.loc[best, 'Sharpe (ann.)']:.2f})")
+
+    best = leader(results["Sharpe (ann.)"])
+    if best is None:
+        print(f"\nNo ranked result: {NO_LEADER_EXPLANATION}.")
+    else:
+        print(
+            f"\nHighest Sharpe ratio: {best} ({results.loc[best, 'Sharpe (ann.)']:.2f})"
+        )
 
     if args.plot:
         # The summary keeps only window averages, so recompute the series.
