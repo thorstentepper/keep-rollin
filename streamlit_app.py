@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-import datetime
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
-from keep_rollin.data import FallbackUnavailable, fetch_prices_with_fallback
+from keep_rollin.data import (
+    DEFAULT_BENCHMARK,
+    DEFAULT_TICKERS,
+    FallbackUnavailable,
+    default_date_range,
+    fetch_prices_with_fallback,
+)
 from keep_rollin.metrics import (
     daily_returns,
     excess_returns,
@@ -23,11 +27,11 @@ st.caption("Annualised risk/return metrics for multi-asset portfolios")
 
 with st.sidebar:
     st.header("Parameters")
-    tickers_raw = st.text_input("Tickers (comma-separated)", "AMZN, META")
-    benchmark = st.text_input("Benchmark", "^GSPC")
-    today = datetime.date.today()
-    start = st.date_input("Start date", today.replace(year=today.year - 5))
-    end = st.date_input("End date", today)
+    tickers_raw = st.text_input("Tickers (comma-separated)", ", ".join(DEFAULT_TICKERS))
+    benchmark = st.text_input("Benchmark", DEFAULT_BENCHMARK)
+    default_start, default_end = default_date_range()
+    start = st.date_input("Start date", default_start)
+    end = st.date_input("End date", default_end)
     window = st.slider(
         "Rolling window (trading days)",
         min_value=21,

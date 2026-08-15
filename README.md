@@ -41,6 +41,8 @@ uv run streamlit run streamlit_app.py
 
 Opens an interactive dashboard in your browser: pick tickers, benchmark, date range, and rolling window from the sidebar and click **Analyse**.
 
+It opens on MSFT and NVDA against the S&P 500, over the five years ending on the previous trading day. Trading days are approximated as weekdays, so the default end date does not skip exchange holidays.
+
 ### Docker
 
 The Dockerfile has two runtime targets. The dashboard is the default:
@@ -71,7 +73,7 @@ They are separate images rather than one image with an overridable command becau
 **The `rollin` CLI ships in both images**, since it installs with the package. Override the command to use it without starting a server:
 
 ```bash
-docker run --rm keep-rollin rollin AMZN META --start 2023-01-01 --end 2024-01-01
+docker run --rm keep-rollin rollin MSFT NVDA --start 2023-01-01 --end 2024-01-01
 ```
 
 Both images run as a non-root user and include the bundled offline price snapshot, so the fallback works in the container too.
@@ -97,7 +99,7 @@ systemd=true
 ### CLI
 
 ```bash
-rollin AMZN META --benchmark ^GSPC --start 2016-01-01 --end 2016-12-31
+rollin MSFT NVDA --benchmark ^GSPC --start 2023-01-01 --end 2024-01-01
 ```
 
 Options:
@@ -121,7 +123,7 @@ uv run uvicorn keep_rollin.api:app --reload
 Interactive docs at <http://localhost:8000/docs>.
 
 ```bash
-curl "http://localhost:8000/metrics?tickers=AMZN&tickers=META&start=2023-01-01&end=2024-01-01"
+curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2023-01-01&end=2024-01-01"
 ```
 
 | Endpoint | Description |
@@ -133,11 +135,13 @@ Query parameters for `/metrics`:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `tickers` | required | Yahoo Finance symbol; repeat the parameter for several |
-| `start` | required | Start date `YYYY-MM-DD` |
-| `end` | required | End date `YYYY-MM-DD` |
+| `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbol; repeat the parameter for several |
+| `start` | 5 years before `end` | Start date `YYYY-MM-DD` |
+| `end` | previous trading day | End date `YYYY-MM-DD` |
 | `benchmark` | `^GSPC` | Benchmark symbol |
 | `rolling_window` | `63` | Rolling window in trading days (2–252) |
+
+Every parameter is optional and each defaults independently, so `curl http://localhost:8000/metrics` is a valid request that returns the same defaults the dashboard opens on.
 
 The response includes `used_fallback`, which is `true` when live data was unavailable and the offline snapshot was served instead. Metrics that are mathematically undefined for the data (an infinite Sortino ratio, for instance) are returned as `null`.
 

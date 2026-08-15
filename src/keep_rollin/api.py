@@ -27,14 +27,17 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from keep_rollin.data import (
+    DEFAULT_BENCHMARK,
+    DEFAULT_HISTORY_YEARS,
+    DEFAULT_TICKERS,
     FALLBACK_PACKAGE,
     FALLBACK_RESOURCE,
     FallbackUnavailable,
+    default_date_range,
     fetch_prices_with_fallback,
 )
 from keep_rollin.metrics import summarise
 
-DEFAULT_BENCHMARK = "^GSPC"
 DEFAULT_WINDOW = 63
 
 #: How long a successful live fetch stays cached. Daily close prices do not
@@ -205,25 +208,35 @@ def health() -> HealthResponse:
 def metrics(
     response: Response,
     tickers: Annotated[
-        list[str],
+        list[str] | None,
         Query(
-            min_length=1,
-            description="Yahoo Finance symbols; repeat the parameter for several",
-            examples=[["AMZN", "META"]],
+            description=(
+                "Yahoo Finance symbols; repeat the parameter for several. "
+                f"Defaults to {', '.join(DEFAULT_TICKERS)}."
+            ),
+            examples=[list(DEFAULT_TICKERS)],
         ),
-    ],
+    ] = None,
     start: Annotated[
-        datetime.date,
+        datetime.date | None,
         Query(
-            description="Start date, inclusive, as YYYY-MM-DD", examples=["2023-01-01"]
+            description=(
+                "Start date, inclusive, as YYYY-MM-DD. Defaults to "
+                f"{DEFAULT_HISTORY_YEARS} years before the end date."
+            ),
+            examples=["2023-01-01"],
         ),
-    ],
+    ] = None,
     end: Annotated[
-        datetime.date,
+        datetime.date | None,
         Query(
-            description="End date, exclusive, as YYYY-MM-DD", examples=["2024-01-01"]
+            description=(
+                "End date, exclusive, as YYYY-MM-DD. Defaults to the previous "
+                "trading day."
+            ),
+            examples=["2024-01-01"],
         ),
-    ],
+    ] = None,
     benchmark: Annotated[
         str, Query(description="Benchmark symbol")
     ] = DEFAULT_BENCHMARK,
@@ -236,8 +249,20 @@ def metrics(
         ),
     ] = DEFAULT_WINDOW,
 ) -> MetricsResponse:
-    """Compute Sharpe, Sortino, max drawdown and rolling averages per asset."""
-    symbols = _normalise_tickers(tickers)
+    """Compute Sharpe, Sortino, max drawdown and rolling averages per asset.
+
+    Every parameter is optional: with none supplied this reports the default
+    tickers over the default window, so ``GET /metrics`` is a usable request.
+    """
+    # Each date defaults independently, so supplying only one still gives a
+    # sensible window rather than requiring both or neither.
+    default_start, default_end = default_date_range()
+    if end is None:
+        end = default_end
+    if start is None:
+        start = default_start
+
+    symbols = _normalise_tickers(list(DEFAULT_TICKERS) if tickers is None else tickers)
     if not symbols:
         raise HTTPException(status_code=422, detail="No usable ticker symbols given.")
     if end <= start:

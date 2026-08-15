@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from unittest.mock import patch
 
 import numpy as np
@@ -8,9 +9,11 @@ import pytest
 
 from keep_rollin.data import (
     FallbackUnavailable,
+    default_date_range,
     fetch_prices,
     fetch_prices_with_fallback,
     load_fallback_prices,
+    previous_trading_day,
 )
 
 
@@ -25,7 +28,7 @@ def _make_yf_response(tickers: list[str], n: int = 10) -> pd.DataFrame:
 
 @patch("keep_rollin.data.yf.download")
 def test_stock_columns_match_requested_tickers(mock_dl):
-    tickers = ["AMZN", "META"]
+    tickers = ["MSFT", "NVDA"]
     benchmark = "^GSPC"
     mock_dl.return_value = _make_yf_response(tickers + [benchmark])
     stocks, _ = fetch_prices(tickers, benchmark, "2020-01-01", "2020-12-31")
@@ -34,7 +37,7 @@ def test_stock_columns_match_requested_tickers(mock_dl):
 
 @patch("keep_rollin.data.yf.download")
 def test_benchmark_returned_as_series(mock_dl):
-    tickers = ["AMZN"]
+    tickers = ["MSFT"]
     benchmark = "^GSPC"
     mock_dl.return_value = _make_yf_response(tickers + [benchmark])
     _, bm = fetch_prices(tickers, benchmark, "2020-01-01", "2020-12-31")
@@ -43,7 +46,7 @@ def test_benchmark_returned_as_series(mock_dl):
 
 @patch("keep_rollin.data.yf.download")
 def test_download_receives_all_tickers(mock_dl):
-    tickers = ["AMZN", "META"]
+    tickers = ["MSFT", "NVDA"]
     benchmark = "^GSPC"
     mock_dl.return_value = _make_yf_response(tickers + [benchmark])
     fetch_prices(tickers, benchmark, "2020-01-01", "2020-12-31")
@@ -53,7 +56,7 @@ def test_download_receives_all_tickers(mock_dl):
 
 @patch("keep_rollin.data.yf.download")
 def test_output_contains_no_na(mock_dl):
-    tickers = ["AMZN", "META"]
+    tickers = ["MSFT", "NVDA"]
     benchmark = "^GSPC"
     mock_dl.return_value = _make_yf_response(tickers + [benchmark])
     stocks, bm = fetch_prices(tickers, benchmark, "2020-01-01", "2020-12-31")
@@ -63,16 +66,66 @@ def test_output_contains_no_na(mock_dl):
 
 @patch("keep_rollin.data.yf.download")
 def test_stock_and_benchmark_share_index(mock_dl):
-    tickers = ["AMZN"]
+    tickers = ["MSFT"]
     benchmark = "^GSPC"
     mock_dl.return_value = _make_yf_response(tickers + [benchmark])
     stocks, bm = fetch_prices(tickers, benchmark, "2020-01-01", "2020-12-31")
     assert stocks.index.equals(bm.index)
 
 
+# ── Default dates ────────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "reference, expected",
+    [
+        ("2026-08-18", "2026-08-17"),  # Tuesday -> Monday
+        ("2026-08-17", "2026-08-14"),  # Monday -> previous Friday
+        ("2026-08-16", "2026-08-14"),  # Sunday -> Friday, not Thursday
+        ("2026-08-15", "2026-08-14"),  # Saturday -> Friday
+        ("2026-08-14", "2026-08-13"),  # Friday -> Thursday
+    ],
+)
+def test_previous_trading_day_skips_weekends(reference, expected):
+    got = previous_trading_day(datetime.date.fromisoformat(reference))
+    assert got == datetime.date.fromisoformat(expected)
+
+
+def test_previous_trading_day_returns_a_date():
+    assert isinstance(previous_trading_day(datetime.date(2026, 8, 18)), datetime.date)
+
+
+def test_previous_trading_day_is_strictly_before_reference():
+    reference = datetime.date(2026, 8, 18)
+    assert previous_trading_day(reference) < reference
+
+
+def test_previous_trading_day_defaults_to_today():
+    assert previous_trading_day() < datetime.date.today()
+
+
+def test_default_range_spans_five_years_to_previous_trading_day():
+    start, end = default_date_range(datetime.date(2026, 8, 18))
+    assert end == datetime.date(2026, 8, 17)
+    assert start == datetime.date(2021, 8, 17)
+
+
+def test_default_range_years_is_adjustable():
+    start, end = default_date_range(datetime.date(2026, 8, 18), years=1)
+    assert (end - start).days == 365
+
+
+def test_default_range_handles_leap_day():
+    """29 February has no counterpart five years earlier, so the start rolls back."""
+    # Friday 1 March 2024 -> previous trading day is Thursday 29 February.
+    start, end = default_date_range(datetime.date(2024, 3, 1))
+    assert end == datetime.date(2024, 2, 29)
+    assert start == datetime.date(2019, 2, 28)
+
+
 # ── Offline fallback ─────────────────────────────────────────────────────────
 
-FALLBACK_TICKERS = ["AMZN", "META"]
+FALLBACK_TICKERS = ["MSFT", "NVDA"]
 FALLBACK_BENCHMARK = "^GSPC"
 
 
