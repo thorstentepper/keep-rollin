@@ -11,6 +11,9 @@ from keep_rollin.data import (
     fetch_prices,
 )
 from keep_rollin.metrics import (
+    DEFAULT_ROLLING_WINDOW,
+    MAX_ROLLING_WINDOW,
+    MIN_ROLLING_WINDOW,
     NO_LEADER_EXPLANATION,
     daily_returns,
     excess_returns,
@@ -19,6 +22,20 @@ from keep_rollin.metrics import (
     rolling_sortino_ratio,
     summarise,
 )
+
+
+def _rolling_window(value: str) -> int:
+    """Validate the rolling window against the same bounds the API enforces."""
+    try:
+        window = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from None
+    if not MIN_ROLLING_WINDOW <= window <= MAX_ROLLING_WINDOW:
+        raise argparse.ArgumentTypeError(
+            f"must be between {MIN_ROLLING_WINDOW} and {MAX_ROLLING_WINDOW} "
+            f"trading days, got {window}"
+        )
+    return window
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -45,8 +62,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--end", default=str(end), help="End date YYYY-MM-DD")
     parser.add_argument(
         "--rolling-window",
-        type=int,
-        default=63,
+        type=_rolling_window,
+        default=DEFAULT_ROLLING_WINDOW,
         metavar="DAYS",
         help="Rolling Sharpe window in trading days (≈ 1 quarter)",
     )

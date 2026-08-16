@@ -19,6 +19,13 @@ Computes annualised risk/return metrics for multi-asset portfolios, including ro
 - **Rolling Sharpe ratio** — Sharpe ratio computed over a sliding window (default: 63 trading days ≈ 1 quarter)
 - **Rolling Sortino ratio** — same, but penalising only downside volatility within each window
 
+Two conventions apply everywhere — to the CLI, the dashboard and the API alike:
+
+- **Excess return is measured against the benchmark, not a risk-free rate.** Classical Sharpe uses the risk-free rate; measuring against a configurable benchmark makes this closer to an information ratio. That is a deliberate choice: the question here is "did this asset beat the index, per unit of risk taken?"
+- **Date ranges are inclusive at both ends**, and returns are annualised with a 252-trading-day year.
+
+The same metrics are exposed in three ways: a **command-line tool**, a **Streamlit dashboard**, and a **FastAPI JSON API**.
+
 Data is fetched live from Yahoo Finance. If Yahoo Finance is unavailable, the dashboard falls back to a small price snapshot shipped with the package so it still renders — clearly flagged as offline data.
 
 
@@ -101,14 +108,14 @@ Every argument is optional and defaults to the same values as the dashboard and 
 | `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbols, space-separated |
 | `--benchmark` | `^GSPC` | Yahoo Finance symbol for the benchmark |
 | `--start` | 5 years before `--end` | Start date `YYYY-MM-DD` |
-| `--end` | previous trading day | End date `YYYY-MM-DD` |
-| `--rolling-window` | `63` | Rolling window in trading days (for both Sharpe and Sortino) |
+| `--end` | previous trading day | End date `YYYY-MM-DD`, inclusive |
+| `--rolling-window` | `63` | Rolling window in trading days, 2–252 (for both Sharpe and Sortino) |
 | `--plot` | off | Display rolling Sharpe and Sortino ratio charts |
 
 Override any of them:
 
 ```bash
-rollin AAPL --benchmark ^GSPC --start 2023-01-01 --end 2024-01-01 --rolling-window 21
+rollin AAPL --benchmark ^GSPC --start 2023-01-01 --end 2023-12-31 --rolling-window 21
 ```
 
 ### HTTP API
@@ -121,10 +128,10 @@ uv run uvicorn keep_rollin.api:app --reload
 Interactive docs at <http://localhost:8000/docs>.
 
 ```bash
-curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2023-01-01&end=2024-01-01"
+curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2023-01-01&end=2023-12-31"
 ```
 
-`end` is exclusive, so that range covers exactly the 2023 calendar year.
+Both bounds are inclusive, so that range covers the whole 2023 calendar year: the first and last bars are 2023-01-03 and 2023-12-29.
 
 | Endpoint | Description |
 |----------|-------------|
@@ -137,7 +144,7 @@ Query parameters for `/metrics`:
 |-----------|---------|-------------|
 | `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbol; repeat the parameter for several |
 | `start` | 5 years before `end` | Start date `YYYY-MM-DD` |
-| `end` | previous trading day | End date `YYYY-MM-DD` |
+| `end` | previous trading day | End date `YYYY-MM-DD`, inclusive |
 | `benchmark` | `^GSPC` | Benchmark symbol |
 | `rolling_window` | `63` | Rolling window in trading days (2–252) |
 
@@ -164,6 +171,14 @@ It refuses to overwrite the existing snapshot if the fetch fails or returns too 
 uv run pytest
 # with coverage
 uv run pytest --cov=keep_rollin
+```
+
+CI also lints and type-checks. To reproduce it locally, run what the workflow runs:
+
+```bash
+uv run ruff check src tests scripts streamlit_app.py
+uv run ruff format --check src tests scripts streamlit_app.py
+uv run mypy src
 ```
 
 

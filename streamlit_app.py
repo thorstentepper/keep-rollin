@@ -13,6 +13,8 @@ from keep_rollin.data import (
     fetch_prices_with_fallback,
 )
 from keep_rollin.metrics import (
+    DEFAULT_ROLLING_WINDOW,
+    MAX_ROLLING_WINDOW,
     NO_LEADER_EXPLANATION,
     daily_returns,
     excess_returns,
@@ -47,8 +49,8 @@ with st.sidebar:
     window = st.slider(
         "Rolling window (trading days)",
         min_value=21,
-        max_value=252,
-        value=63,
+        max_value=MAX_ROLLING_WINDOW,
+        value=DEFAULT_ROLLING_WINDOW,
         help="21 ≈ 1 month  ·  63 ≈ 1 quarter  ·  252 ≈ 1 year",
     )
     run = st.button("Analyse", type="primary", width="stretch")

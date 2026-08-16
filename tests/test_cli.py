@@ -152,3 +152,16 @@ def test_explicit_dates_still_win(mock_dl, capsys):
 
     assert "2023-01-01" in capsys.readouterr().out
     assert mock_dl.call_args.kwargs["start"] == "2023-01-01"
+
+
+@patch("keep_rollin.data.yf.download")
+def test_rolling_window_bounds_match_the_api(mock_dl, capsys):
+    """The API rejects <2 and >252; the CLI must not quietly accept them."""
+    import pytest
+
+    from keep_rollin.metrics import MAX_ROLLING_WINDOW, MIN_ROLLING_WINDOW
+
+    for bad in (MIN_ROLLING_WINDOW - 1, MAX_ROLLING_WINDOW + 1):
+        with pytest.raises(SystemExit):
+            main(["AAPL", "--rolling-window", str(bad)])
+        assert "must be between" in capsys.readouterr().err

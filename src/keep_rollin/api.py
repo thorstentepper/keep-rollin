@@ -36,9 +36,15 @@ from keep_rollin.data import (
     default_date_range,
     fetch_prices_with_fallback,
 )
-from keep_rollin.metrics import NO_LEADER_EXPLANATION, leader, summarise
+from keep_rollin.metrics import (
+    DEFAULT_ROLLING_WINDOW,
+    MAX_ROLLING_WINDOW,
+    MIN_ROLLING_WINDOW,
+    NO_LEADER_EXPLANATION,
+    leader,
+    summarise,
+)
 
-DEFAULT_WINDOW = 63
 
 #: How long a successful live fetch stays cached. Daily close prices do not
 #: change intraday, so re-fetching per request only burns Yahoo Finance quota.
@@ -238,7 +244,7 @@ def metrics(
         datetime.date | None,
         Query(
             description=(
-                "End date, exclusive, as YYYY-MM-DD. Defaults to the previous "
+                "End date, inclusive, as YYYY-MM-DD. Defaults to the previous "
                 "trading day."
             ),
             examples=["2024-01-01"],
@@ -250,11 +256,11 @@ def metrics(
     rolling_window: Annotated[
         int,
         Query(
-            ge=2,
-            le=252,
+            ge=MIN_ROLLING_WINDOW,
+            le=MAX_ROLLING_WINDOW,
             description="Rolling window in trading days (63 ≈ one quarter)",
         ),
-    ] = DEFAULT_WINDOW,
+    ] = DEFAULT_ROLLING_WINDOW,
 ) -> MetricsResponse:
     """Compute Sharpe, Sortino, max drawdown and rolling averages per asset.
 
