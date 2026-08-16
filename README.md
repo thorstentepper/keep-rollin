@@ -19,6 +19,13 @@ Computes annualised risk/return metrics for multi-asset portfolios, including ro
 - **Rolling Sharpe ratio** — Sharpe ratio computed over a sliding window (default: 63 trading days ≈ 1 quarter)
 - **Rolling Sortino ratio** — same, but penalising only downside volatility within each window
 
+Two conventions apply everywhere — to the CLI, the dashboard and the API alike:
+
+- **Excess return is measured against the benchmark, not a risk-free rate.** Classical Sharpe uses the risk-free rate; measuring against a configurable benchmark makes this closer to an information ratio. That is a deliberate choice: the question here is "did this asset beat the index, per unit of risk taken?"
+- **Date ranges are inclusive at both ends**, and returns are annualised with a 252-trading-day year.
+
+The same metrics are exposed in three ways: a **command-line tool**, a **Streamlit dashboard**, and a **FastAPI JSON API**.
+
 Data is fetched live from Yahoo Finance. If Yahoo Finance is unavailable, the dashboard falls back to a small price snapshot shipped with the package so it still renders — clearly flagged as offline data.
 
 
@@ -76,7 +83,7 @@ Then visit <http://localhost:8000/docs>.
 **The `rollin` CLI ships in both images**, since it installs with the package. Override the command to use it without starting a server:
 
 ```bash
-docker run --rm keep-rollin rollin MSFT NVDA --start 2026-01-01 --end 2026-08-14
+docker run --rm keep-rollin rollin MSFT NVDA
 ```
 
 Both images run as a non-root user and include the bundled offline price snapshot, so the fallback works in the container too.
@@ -91,18 +98,25 @@ sudo usermod -aG docker $USER   # then log out and back in, or run: newgrp docke
 ### CLI
 
 ```bash
-rollin MSFT NVDA --benchmark ^GSPC --start 2026-01-01 --end 2026-08-14
+rollin MSFT NVDA
 ```
 
-Options:
+Every argument is optional and defaults to the same values as the dashboard and the API, so a bare `rollin` analyses the default tickers over the default window.
 
-| Flag | Default | Description |
-|------|---------|-------------|
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbols, space-separated |
 | `--benchmark` | `^GSPC` | Yahoo Finance symbol for the benchmark |
-| `--start` | required | Start date `YYYY-MM-DD` |
-| `--end` | required | End date `YYYY-MM-DD` |
-| `--rolling-window` | `63` | Rolling window in trading days (for both Sharpe and Sortino) |
+| `--start` | 5 years before `--end` | Start date `YYYY-MM-DD` |
+| `--end` | previous trading day | End date `YYYY-MM-DD`, inclusive |
+| `--rolling-window` | `63` | Rolling window in trading days, 2–252 (for both Sharpe and Sortino) |
 | `--plot` | off | Display rolling Sharpe and Sortino ratio charts |
+
+Override any of them:
+
+```bash
+rollin AAPL --benchmark ^GSPC --start 2023-01-01 --end 2023-12-31 --rolling-window 21
+```
 
 ### HTTP API
 
@@ -114,8 +128,10 @@ uv run uvicorn keep_rollin.api:app --reload
 Interactive docs at <http://localhost:8000/docs>.
 
 ```bash
-curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2026-01-01&end=2026-08-14"
+curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2023-01-01&end=2023-12-31"
 ```
+
+Both bounds are inclusive, so that range covers the whole 2023 calendar year: the first and last bars are 2023-01-03 and 2023-12-29.
 
 | Endpoint | Description |
 |----------|-------------|
@@ -128,7 +144,7 @@ Query parameters for `/metrics`:
 |-----------|---------|-------------|
 | `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbol; repeat the parameter for several |
 | `start` | 5 years before `end` | Start date `YYYY-MM-DD` |
-| `end` | previous trading day | End date `YYYY-MM-DD` |
+| `end` | previous trading day | End date `YYYY-MM-DD`, inclusive |
 | `benchmark` | `^GSPC` | Benchmark symbol |
 | `rolling_window` | `63` | Rolling window in trading days (2–252) |
 
@@ -157,6 +173,14 @@ uv run pytest
 uv run pytest --cov=keep_rollin
 ```
 
+CI also lints and type-checks. To reproduce it locally, run what the workflow runs:
+
+```bash
+uv run ruff check src tests scripts streamlit_app.py
+uv run ruff format --check src tests scripts streamlit_app.py
+uv run mypy src
+```
+
 
 ## Project structure
 
@@ -176,13 +200,16 @@ src/keep_rollin/
     resources/
         fallback_prices.parquet — offline snapshot used when Yahoo Finance is down
 tests/
+    conftest.py                 — pins matplotlib's headless backend for the suite
     test_api.py
     test_cli.py
     test_data.py
     test_metrics.py
+    test_streamlit_app.py
 pyproject.toml                  — project metadata, dependencies and optional extras
 uv.lock                         — pinned dependency versions
 requirements.txt                — pip entry point for Streamlit Community Cloud
+codecov.yml                     — coverage thresholds and PR comment behaviour
 ```
 
 

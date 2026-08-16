@@ -67,8 +67,8 @@ def default_date_range(
 ) -> tuple[datetime.date, datetime.date]:
     """Default analysis window: ``years`` of history to the previous trading day.
 
-    Returns ``(start, end)``. Note that ``end`` is exclusive when passed to
-    :func:`fetch_prices`, matching Yahoo Finance's own convention.
+    Returns ``(start, end)``. Both bounds are inclusive, so ``end`` is the
+    last trading day analysed.
     """
     end = previous_trading_day(reference)
     try:
@@ -96,7 +96,7 @@ def fetch_prices(
     start:
         Start date in ``YYYY-MM-DD`` format (inclusive).
     end:
-        End date in ``YYYY-MM-DD`` format (exclusive).
+        End date in ``YYYY-MM-DD`` format (inclusive).
 
     Returns
     -------
@@ -106,10 +106,15 @@ def fetch_prices(
         Series of adjusted close prices for the benchmark.
     """
     all_tickers = list(tickers) + [benchmark]
+    # Yahoo Finance treats ``end`` as exclusive. This package's contract is
+    # inclusive — the end date is the last bar analysed — which is what a date
+    # picker implies and what the offline fallback already does, so ask
+    # upstream for one day more.
+    end_exclusive = (pd.Timestamp(end) + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
     raw = yf.download(
         all_tickers,
         start=start,
-        end=end,
+        end=end_exclusive,
         auto_adjust=True,
         progress=False,
         timeout=FETCH_TIMEOUT_SECONDS,
@@ -137,7 +142,7 @@ def load_fallback_prices(
     benchmark:
         Benchmark symbol. Must be present in the snapshot.
     start, end:
-        Optional ``YYYY-MM-DD`` bounds. If the overlap with the snapshot is
+        Optional ``YYYY-MM-DD`` bounds, both inclusive. If the overlap is
         too short to compute returns, the full snapshot is returned instead —
         stale dates are more useful here than an empty frame.
 

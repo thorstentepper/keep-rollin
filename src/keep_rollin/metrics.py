@@ -5,6 +5,14 @@ import pandas as pd
 
 TRADING_DAYS = 252
 
+#: Rolling-window bounds, shared by every surface so the CLI, API and
+#: dashboard cannot disagree about what they accept. One row cannot yield a
+#: standard deviation, and a window longer than a trading year stops being a
+#: rolling estimate.
+MIN_ROLLING_WINDOW = 2
+MAX_ROLLING_WINDOW = TRADING_DAYS
+DEFAULT_ROLLING_WINDOW = 63
+
 
 def daily_returns(prices: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
     """Compute daily percentage returns, dropping the first NaN row."""
@@ -24,7 +32,9 @@ def sharpe_ratio(excess: pd.DataFrame) -> pd.Series:
     return excess.mean() / excess.std() * np.sqrt(TRADING_DAYS)
 
 
-def rolling_sharpe_ratio(excess: pd.DataFrame, window: int = 63) -> pd.DataFrame:
+def rolling_sharpe_ratio(
+    excess: pd.DataFrame, window: int = DEFAULT_ROLLING_WINDOW
+) -> pd.DataFrame:
     """Sharpe ratio computed over a rolling window of trading days.
 
     Parameters
@@ -48,7 +58,9 @@ def sortino_ratio(excess: pd.DataFrame) -> pd.Series:
     return mean / downside * np.sqrt(TRADING_DAYS)
 
 
-def rolling_sortino_ratio(excess: pd.DataFrame, window: int = 63) -> pd.DataFrame:
+def rolling_sortino_ratio(
+    excess: pd.DataFrame, window: int = DEFAULT_ROLLING_WINDOW
+) -> pd.DataFrame:
     """Sortino ratio computed over a rolling window of trading days.
 
     Parameters
@@ -111,7 +123,7 @@ SUMMARY_COLUMNS = (
 def summarise(
     stock_prices: pd.DataFrame,
     benchmark_prices: pd.Series,
-    window: int = 63,
+    window: int = DEFAULT_ROLLING_WINDOW,
 ) -> pd.DataFrame:
     """Compute the full metrics table for a set of assets against a benchmark.
 

@@ -37,6 +37,14 @@ rollin = "keep_rollin.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/keep_rollin"]
 
+[tool.ruff.lint.pydocstyle]
+# Docstrings follow NumPy style: sectioned with Parameters/Returns/Notes under
+# dashed underlines. The pydocstyle (D) rules are deliberately not enabled —
+# short helpers such as daily_returns(prices) read better with a one-liner
+# than with a Parameters block. This records the convention for the sections
+# that are written.
+convention = "numpy"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 

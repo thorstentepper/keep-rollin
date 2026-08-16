@@ -197,3 +197,63 @@ def test_unservable_symbols_raise_rather_than_invent_data(mock_dl):
         fetch_prices_with_fallback(
             ["NOT_A_TICKER"], FALLBACK_BENCHMARK, "2020-01-01", "2020-12-31"
         )
+
+
+# ── Date range semantics ─────────────────────────────────────────────────────
+
+
+def _yf_like(tickers: list[str], start: str, end: str) -> pd.DataFrame:
+    """Mimic yfinance, whose own `end` is exclusive."""
+    dates = pd.bdate_range(start, pd.Timestamp(end) - pd.Timedelta(days=1))
+    frame = pd.DataFrame(
+        {t: np.arange(100.0, 100.0 + len(dates)) for t in tickers}, index=dates
+    )
+    frame.columns = pd.MultiIndex.from_arrays([["Close"] * len(tickers), tickers])
+    return frame
+
+
+@patch("keep_rollin.data.yf.download")
+def test_end_date_is_inclusive(mock_dl):
+    """The end date is the last bar analysed, unlike yfinance's own convention."""
+    mock_dl.side_effect = lambda t, start, end, **k: _yf_like(list(t), start, end)
+
+    stocks, _ = fetch_prices(["AAA"], "BBB", "2023-06-01", "2023-06-15")
+
+    assert stocks.index.max() == pd.Timestamp("2023-06-15")
+
+
+@patch("keep_rollin.data.yf.download")
+def test_upstream_is_asked_for_one_extra_day(mock_dl):
+    mock_dl.side_effect = lambda t, start, end, **k: _yf_like(list(t), start, end)
+
+    fetch_prices(["AAA"], "BBB", "2023-06-01", "2023-06-15")
+
+    assert mock_dl.call_args.kwargs["end"] == "2023-06-16"
+    assert mock_dl.call_args.kwargs["start"] == "2023-06-01"
+
+
+@patch("keep_rollin.data.yf.download")
+def test_live_and_fallback_agree_on_the_last_bar(mock_dl):
+    """Regression: the fallback was inclusive while the live path was exclusive,
+    so an outage silently shifted the window by a day."""
+    mock_dl.side_effect = lambda t, start, end, **k: _yf_like(list(t), start, end)
+
+    live, _ = fetch_prices(
+        FALLBACK_TICKERS, FALLBACK_BENCHMARK, "2023-06-01", "2023-06-15"
+    )
+    offline, _ = load_fallback_prices(
+        FALLBACK_TICKERS, FALLBACK_BENCHMARK, "2023-06-01", "2023-06-15"
+    )
+
+    assert live.index.max() == offline.index.max()
+
+
+@patch("keep_rollin.data.yf.download")
+def test_default_range_ends_on_the_previous_trading_day(mock_dl):
+    """Composing the default end with inclusivity must not lose a day."""
+    mock_dl.side_effect = lambda t, start, end, **k: _yf_like(list(t), start, end)
+
+    start, end = default_date_range()
+    stocks, _ = fetch_prices(FALLBACK_TICKERS, FALLBACK_BENCHMARK, str(start), str(end))
+
+    assert stocks.index.max().date() == previous_trading_day()
