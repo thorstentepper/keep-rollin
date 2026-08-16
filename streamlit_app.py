@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
@@ -20,6 +21,12 @@ from keep_rollin.metrics import (
     rolling_sortino_ratio,
     summarise,
 )
+
+# Streamlit renders the script on a worker thread, and an interactive backend
+# such as TkAgg crashes the interpreter when a figure is created off the main
+# thread. Agg is headless and safe. Hosted deployments have no display and
+# would pick Agg anyway; this protects local runs.
+matplotlib.use("Agg")
 
 st.set_page_config(page_title="Keep Rollin'", layout="wide")
 st.title("Keep Rollin'")
@@ -48,7 +55,14 @@ with st.sidebar:
 
 # ── Guard clauses ─────────────────────────────────────────────────────────────
 
-if not run:
+if run:
+    st.session_state.analysed = True
+
+# Tracked in session state rather than read straight off the button: the retry
+# control below triggers a rerun in which "Analyse" is no longer pressed, and
+# without this the app would fall back to the intro screen instead of
+# recomputing.
+if not st.session_state.get("analysed", False):
     st.info("Configure parameters in the sidebar and click **Analyse**.")
     st.stop()
 
@@ -64,8 +78,10 @@ if end <= start:
 # ── Data fetching ─────────────────────────────────────────────────────────────
 
 
-# The TTL matters: without it a fallback result would be cached for the life of
-# the process, pinning the offline snapshot long after Yahoo Finance recovered.
+# Live prices are worth caching: daily closes do not change intraday, and this
+# keeps repeat views off Yahoo Finance's rate limiter. Fallback results are
+# evicted immediately after use (see below), so one failed fetch cannot pin the
+# offline snapshot for the whole TTL.
 @st.cache_data(ttl=900)
 def load(
     tickers: tuple[str, ...],
@@ -96,11 +112,20 @@ if stock_prices.empty:
     st.stop()
 
 if used_fallback:
+    # Drop this entry so the next run asks Yahoo Finance again. A single failed
+    # fetch — a cold start, or a momentary rate limit — would otherwise keep
+    # serving the snapshot for these exact inputs until the TTL expired, while
+    # any other ticker combination fetched live data quite happily.
+    load.clear(tuple(tickers), benchmark, str(start), str(end))
+
     st.warning(
         f"Yahoo Finance is unavailable — showing the bundled offline snapshot "
         f"({stock_prices.index.min():%Y-%m-%d} → {stock_prices.index.max():%Y-%m-%d}). "
         "These figures are not live."
     )
+    if st.button("Retry live data"):
+        load.clear()
+        st.rerun()
 
 # ── Calculations ──────────────────────────────────────────────────────────────
 
