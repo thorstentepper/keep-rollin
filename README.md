@@ -121,8 +121,10 @@ uv run uvicorn keep_rollin.api:app --reload
 Interactive docs at <http://localhost:8000/docs>.
 
 ```bash
-curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2026-01-01&end=2026-08-14"
+curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2023-01-01&end=2024-01-01"
 ```
+
+`end` is exclusive, so that range covers exactly the 2023 calendar year.
 
 | Endpoint | Description |
 |----------|-------------|
