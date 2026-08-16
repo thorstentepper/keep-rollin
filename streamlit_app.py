@@ -16,6 +16,7 @@ from keep_rollin.metrics import (
     DEFAULT_ROLLING_WINDOW,
     MAX_ROLLING_WINDOW,
     NO_LEADER_EXPLANATION,
+    TRADING_DAYS,
     daily_returns,
     excess_returns,
     leader,
@@ -36,16 +37,33 @@ st.caption(
     "Annualised risk/return metrics for multi-asset portfolios, "
     "including rolling windows."
 )
+st.caption(
+    "Sharpe and Sortino are measured against the benchmark you choose, not a "
+    f"risk-free rate, and annualised with a {TRADING_DAYS}-trading-day year. "
+    "Start and end dates are both inclusive."
+)
 
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 
 with st.sidebar:
     st.header("Parameters")
     tickers_raw = st.text_input("Tickers (comma-separated)", ", ".join(DEFAULT_TICKERS))
-    benchmark = st.text_input("Benchmark", DEFAULT_BENCHMARK)
+    benchmark = st.text_input(
+        "Benchmark",
+        DEFAULT_BENCHMARK,
+        help=(
+            "Metrics use returns in excess of this symbol rather than a "
+            "risk-free rate, which makes them closer to an information ratio. "
+            "Any Yahoo Finance symbol works — an index, a sector ETF, or a "
+            "single stock, which turns the comparison into relative-value "
+            "analysis against that competitor."
+        ),
+    )
     default_start, default_end = default_date_range()
-    start = st.date_input("Start date", default_start)
-    end = st.date_input("End date", default_end)
+    start = st.date_input("Start date", default_start, help="Inclusive.")
+    end = st.date_input(
+        "End date", default_end, help="Inclusive — the last bar analysed."
+    )
     window = st.slider(
         "Rolling window (trading days)",
         min_value=21,
@@ -158,6 +176,12 @@ best_sortino = leader(results["Sortino (ann.)"])
 
 st.subheader("Summary")
 st.dataframe(results, width="stretch")
+st.caption(
+    f"Excess returns over **{benchmark}** · "
+    f"{stock_prices.index.min():%Y-%m-%d} → {stock_prices.index.max():%Y-%m-%d} "
+    f"inclusive ({len(stock_prices)} trading days) · "
+    f"annualised with {TRADING_DAYS} trading days"
+)
 
 if best_sharpe is None and best_sortino is None:
     st.warning(f"No ranked result — {NO_LEADER_EXPLANATION}.")
