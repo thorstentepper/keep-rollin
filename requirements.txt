@@ -1,8 +1,13 @@
 # Dependency file for Streamlit Community Cloud, which installs with pip and
 # does not read uv.lock.
 #
-# "." installs this project from pyproject.toml, which matters twice over: it
-# pulls in the runtime dependencies, and it puts `keep_rollin` on the import
-# path, which the src/ layout otherwise prevents. The [app] extra adds
-# Streamlit. Versions stay defined in pyproject.toml so this file cannot drift.
-.[app]
+# The install is editable ("-e") on purpose. A plain "." copies a built wheel
+# into site-packages, and the host only reruns pip when this file changes — so
+# a commit that adds code to keep_rollin without touching dependencies leaves
+# the old copy installed, and the freshly pulled streamlit_app.py fails to
+# import names that exist in the repo but not in that stale copy. An editable
+# install points at the checked-out source, so app code and package code can
+# never drift apart.
+#
+# The [app] extra adds Streamlit. Versions stay defined in pyproject.toml.
+-e .[app]
