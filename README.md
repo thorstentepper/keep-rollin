@@ -21,10 +21,8 @@ Computes annualised risk/return metrics for multi-asset portfolios, including ro
 
 Two conventions apply everywhere — to the CLI, the dashboard and the API alike:
 
-- **Excess return is measured against the benchmark, not a risk-free rate.** Classical Sharpe uses the risk-free rate; measuring against a configurable benchmark makes this closer to an information ratio. That is a deliberate choice: the question here is "did this asset beat the index, per unit of risk taken?"
+- **Excess return is measured against the benchmark, not a risk-free rate.** Classical Sharpe uses the risk-free rate; measuring against a configurable benchmark makes this closer to an information ratio. That is a deliberate choice: the question here is "did this asset beat the benchmark, per unit of risk taken?" The benchmark is any Yahoo Finance symbol — an index, a sector ETF, or a single stock — so the same tooling answers both "did it beat the market?" and "did it beat that competitor?"
 - **Date ranges are inclusive at both ends**, and returns are annualised with a 252-trading-day year.
-
-The same metrics are exposed in three ways: a **command-line tool**, a **Streamlit dashboard**, and a **FastAPI JSON API**.
 
 Data is fetched live from Yahoo Finance. If Yahoo Finance is unavailable, the dashboard falls back to a small price snapshot shipped with the package so it still renders — clearly flagged as offline data.
 
@@ -106,7 +104,7 @@ Every argument is optional and defaults to the same values as the dashboard and 
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbols, space-separated |
-| `--benchmark` | `^GSPC` | Yahoo Finance symbol for the benchmark |
+| `--benchmark` | `^GSPC` | Benchmark symbol: any index, ETF or individual stock |
 | `--start` | 5 years before `--end` | Start date `YYYY-MM-DD` |
 | `--end` | previous trading day | End date `YYYY-MM-DD`, inclusive |
 | `--rolling-window` | `63` | Rolling window in trading days, 2–252 (for both Sharpe and Sortino) |
@@ -117,6 +115,14 @@ Override any of them:
 ```bash
 rollin AAPL --benchmark ^GSPC --start 2023-01-01 --end 2023-12-31 --rolling-window 21
 ```
+
+Because the benchmark is just another symbol, pointing it at a competitor turns the same command into relative-value analysis:
+
+```bash
+rollin MSFT NVDA --benchmark AAPL --start 2023-01-01 --end 2023-12-31
+```
+
+Over 2023 that drops MSFT's Sharpe from 1.33 against the S&P 500 to 0.16 against AAPL: it beat the index comfortably and its competitor barely. Max drawdown is computed on prices rather than excess returns, so that column stays absolute and does not move with the benchmark.
 
 ### HTTP API
 
@@ -145,7 +151,7 @@ Query parameters for `/metrics`:
 | `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbol; repeat the parameter for several |
 | `start` | 5 years before `end` | Start date `YYYY-MM-DD` |
 | `end` | previous trading day | End date `YYYY-MM-DD`, inclusive |
-| `benchmark` | `^GSPC` | Benchmark symbol |
+| `benchmark` | `^GSPC` | Benchmark symbol: any index, ETF or individual stock |
 | `rolling_window` | `63` | Rolling window in trading days (2–252) |
 
 Every parameter is optional and each defaults independently, so `curl http://localhost:8000/metrics` is a valid request that returns the same defaults the dashboard opens on.

@@ -209,3 +209,51 @@ def test_flat_prices_explain_instead_of_crashing():
     assert any("No ranked result" in w.value for w in at.warning)
     captions = " ".join(c.value for c in at.caption)
     assert "Highest Sharpe" not in captions
+
+
+# ── Stated conventions ───────────────────────────────────────────────────────
+
+
+def test_conventions_are_stated_before_analysing():
+    """The benchmark-relative basis governs the numbers, so say it up front."""
+    with patch("keep_rollin.data.yf.download", side_effect=_live):
+        at = AppTest.from_file(APP, default_timeout=TIMEOUT)
+        at.run()
+
+    captions = " ".join(c.value for c in at.caption)
+    assert "not a risk-free rate" in captions
+    assert "252" in captions
+    assert "inclusive" in captions
+
+
+def test_results_name_the_benchmark_actually_used():
+    with patch("keep_rollin.data.yf.download", side_effect=_live):
+        at = _analyse()
+
+    basis = [c.value for c in at.caption if "Excess returns over" in c.value]
+    assert basis, "the summary should state what the metrics are measured against"
+    assert "^GSPC" in basis[0]
+
+
+def test_basis_line_follows_a_changed_benchmark():
+    with patch("keep_rollin.data.yf.download", side_effect=_live):
+        at = AppTest.from_file(APP, default_timeout=TIMEOUT)
+        at.run()
+        _widget(at.sidebar.text_input, "Benchmark").set_value("^IXIC").run()
+        at = _widget(at.button, "Analyse").click().run()
+
+    basis = [c.value for c in at.caption if "Excess returns over" in c.value][0]
+    assert "^IXIC" in basis and "^GSPC" not in basis
+
+
+def test_basis_line_reports_the_data_actually_used_not_the_request():
+    """Under the fallback it must agree with the banner, not the requested range."""
+    with patch(
+        "keep_rollin.data.yf.download", side_effect=RuntimeError("rate limited")
+    ):
+        at = _analyse()
+
+    banner = [w.value for w in at.warning if "offline snapshot" in w.value][0]
+    basis = [c.value for c in at.caption if "Excess returns over" in c.value][0]
+    for date in ("2021-08-16", "2026-08-14"):
+        assert date in banner and date in basis
