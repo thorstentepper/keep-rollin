@@ -76,6 +76,23 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """Run the command-line interface.
+
+    Prints the metrics table for the requested tickers, then names the
+    highest-Sharpe asset — or explains why no ranking was possible.
+
+    Parameters
+    ----------
+    argv:
+        Argument list to parse. Defaults to ``sys.argv[1:]``; passing an
+        explicit list is what makes the CLI testable without a subprocess.
+
+    Raises
+    ------
+    SystemExit
+        If no usable ticker symbols remain after normalisation, or if
+        argparse rejects an argument such as an out-of-range rolling window.
+    """
     args = _build_parser().parse_args(argv)
 
     tickers = [t.strip().upper() for t in args.tickers if t.strip()]

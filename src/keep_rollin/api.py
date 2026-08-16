@@ -83,6 +83,13 @@ class AssetMetrics(BaseModel):
 
 
 class MetricsResponse(BaseModel):
+    """A full ``/metrics`` response: the request echoed back, plus results.
+
+    The echoed request matters because every parameter is optional — a caller
+    that sent none still learns which tickers and dates were used. ``assets``
+    holds one entry per requested ticker, in request order.
+    """
+
     benchmark: str
     start: datetime.date
     end: datetime.date
@@ -108,6 +115,13 @@ class MetricsResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    """Liveness of the service, and whether it could serve data offline.
+
+    ``fallback_available`` reports whether the bundled price snapshot is
+    present and readable. A deployment missing it is still healthy, but would
+    fail outright rather than degrade if Yahoo Finance became unreachable.
+    """
+
     status: str
     fallback_available: bool
 
