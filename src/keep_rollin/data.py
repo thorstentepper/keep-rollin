@@ -23,12 +23,16 @@ DEFAULT_HISTORY_YEARS = 5
 
 #: Per-request timeout for Yahoo Finance calls, in seconds.
 #:
-#: yfinance currently defaults to 10s, but that is an upstream default we do
-#: not control and it has no stability guarantee. Passing it explicitly pins
-#: the behaviour and puts it in one place to tune. Note this bounds each HTTP
-#: request, not the whole download: a multi-ticker fetch issues several, so
-#: total wall time can exceed it.
-FETCH_TIMEOUT_SECONDS = 10
+#: Set explicitly rather than inheriting yfinance's 10s default, which is an
+#: upstream value we do not control. It is also deliberately more generous:
+#: locally the default five-year fetch takes under two seconds, but a hosted
+#: dashboard waking from sleep pays for a cold container and a shared egress
+#: IP, and a request that times out there falls back to the offline snapshot
+#: rather than showing live figures.
+#:
+#: Note this bounds each HTTP request, not the whole download: a multi-ticker
+#: fetch issues several, so total wall time can exceed it.
+FETCH_TIMEOUT_SECONDS = 20
 
 # Two rows is the bare minimum for a single daily return; anything less is not
 # a usable series, so a narrower slice falls back to the full snapshot.
