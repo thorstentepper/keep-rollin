@@ -4,7 +4,12 @@ import argparse
 
 import matplotlib.pyplot as plt
 
-from keep_rollin.data import fetch_prices
+from keep_rollin.data import (
+    DEFAULT_BENCHMARK,
+    DEFAULT_TICKERS,
+    default_date_range,
+    fetch_prices,
+)
 from keep_rollin.metrics import (
     NO_LEADER_EXPLANATION,
     daily_returns,
@@ -17,18 +22,27 @@ from keep_rollin.metrics import (
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    # Every argument is optional, matching the HTTP API: both read their
+    # defaults from keep_rollin.data, so the two cannot disagree about what a
+    # bare invocation means.
+    start, end = default_date_range()
     parser = argparse.ArgumentParser(
         description="Compute annualised risk/return metrics for one or more tickers.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("tickers", nargs="+", help="Yahoo Finance ticker symbols")
+    parser.add_argument(
+        "tickers",
+        nargs="*",
+        default=list(DEFAULT_TICKERS),
+        help="Yahoo Finance ticker symbols",
+    )
     parser.add_argument(
         "--benchmark",
-        default="^GSPC",
+        default=DEFAULT_BENCHMARK,
         help="Benchmark ticker symbol",
     )
-    parser.add_argument("--start", required=True, help="Start date YYYY-MM-DD")
-    parser.add_argument("--end", required=True, help="End date YYYY-MM-DD")
+    parser.add_argument("--start", default=str(start), help="Start date YYYY-MM-DD")
+    parser.add_argument("--end", default=str(end), help="End date YYYY-MM-DD")
     parser.add_argument(
         "--rolling-window",
         type=int,
@@ -47,12 +61,16 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     args = _build_parser().parse_args(argv)
 
+    tickers = [t.strip().upper() for t in args.tickers if t.strip()]
+    if not tickers:
+        raise SystemExit("No usable ticker symbols given.")
+
     print(
-        f"Fetching data for {args.tickers} vs {args.benchmark} "
+        f"Fetching data for {tickers} vs {args.benchmark} "
         f"({args.start} → {args.end})..."
     )
     stock_prices, benchmark_prices = fetch_prices(
-        args.tickers, args.benchmark, args.start, args.end
+        tickers, args.benchmark, args.start, args.end
     )
 
     results = (

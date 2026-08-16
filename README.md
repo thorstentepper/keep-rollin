@@ -76,7 +76,7 @@ Then visit <http://localhost:8000/docs>.
 **The `rollin` CLI ships in both images**, since it installs with the package. Override the command to use it without starting a server:
 
 ```bash
-docker run --rm keep-rollin rollin MSFT NVDA --start 2026-01-01 --end 2026-08-14
+docker run --rm keep-rollin rollin MSFT NVDA
 ```
 
 Both images run as a non-root user and include the bundled offline price snapshot, so the fallback works in the container too.
@@ -91,18 +91,25 @@ sudo usermod -aG docker $USER   # then log out and back in, or run: newgrp docke
 ### CLI
 
 ```bash
-rollin MSFT NVDA --benchmark ^GSPC --start 2026-01-01 --end 2026-08-14
+rollin MSFT NVDA
 ```
 
-Options:
+Every argument is optional and defaults to the same values as the dashboard and the API, so a bare `rollin` analyses the default tickers over the default window.
 
-| Flag | Default | Description |
-|------|---------|-------------|
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `tickers` | `MSFT`, `NVDA` | Yahoo Finance symbols, space-separated |
 | `--benchmark` | `^GSPC` | Yahoo Finance symbol for the benchmark |
-| `--start` | required | Start date `YYYY-MM-DD` |
-| `--end` | required | End date `YYYY-MM-DD` |
+| `--start` | 5 years before `--end` | Start date `YYYY-MM-DD` |
+| `--end` | previous trading day | End date `YYYY-MM-DD` |
 | `--rolling-window` | `63` | Rolling window in trading days (for both Sharpe and Sortino) |
 | `--plot` | off | Display rolling Sharpe and Sortino ratio charts |
+
+Override any of them:
+
+```bash
+rollin AAPL --benchmark ^GSPC --start 2023-01-01 --end 2024-01-01 --rolling-window 21
+```
 
 ### HTTP API
 
@@ -176,13 +183,16 @@ src/keep_rollin/
     resources/
         fallback_prices.parquet — offline snapshot used when Yahoo Finance is down
 tests/
+    conftest.py                 — pins matplotlib's headless backend for the suite
     test_api.py
     test_cli.py
     test_data.py
     test_metrics.py
+    test_streamlit_app.py
 pyproject.toml                  — project metadata, dependencies and optional extras
 uv.lock                         — pinned dependency versions
 requirements.txt                — pip entry point for Streamlit Community Cloud
+codecov.yml                     — coverage thresholds and PR comment behaviour
 ```
 
 
