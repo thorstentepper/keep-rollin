@@ -1,0 +1,26 @@
+# Codecov configuration.
+#
+# Coverage is uploaded from .github/workflows/ci.yml on push and pull request.
+# The upload itself is authenticated with CODECOV_TOKEN; this file only shapes
+# what Codecov reports back.
+
+coverage:
+  status:
+    project:
+      default:
+        # Small movements are noise on a project this size: a single new
+        # branch in a rarely-hit path can swing the percentage. Fail the check
+        # only on a real regression.
+        threshold: 1%
+    patch:
+      default:
+        # New and changed lines should carry tests, which is the check worth
+        # being strict about.
+        target: 80%
+
+comment:
+  # Comment on a pull request only when coverage actually moves. Without this,
+  # every PR gets a bot comment restating an unchanged number.
+  require_changes: true
+  layout: "condensed_header, diff, files"
+  behavior: default
