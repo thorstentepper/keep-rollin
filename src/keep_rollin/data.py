@@ -196,9 +196,14 @@ def fetch_prices_with_fallback(
     """
     try:
         stock_prices, benchmark_prices = fetch_prices(tickers, benchmark, start, end)
-        if not stock_prices.empty:
+        if not stock_prices.empty and not benchmark_prices.empty:
             return stock_prices, benchmark_prices, False
-        reason = "Yahoo Finance returned no rows"
+        # A partial response is the awkward case: the assets can arrive while
+        # the benchmark does not, which raises nothing and leaves a non-empty
+        # frame. Every excess return is then undefined, so treat it as a
+        # failed fetch rather than reporting a table of blanks.
+        missing = "assets" if stock_prices.empty else f"the benchmark {benchmark}"
+        reason = f"Yahoo Finance returned no rows for {missing}"
     except Exception as exc:
         reason = f"Yahoo Finance request failed: {exc}"
 

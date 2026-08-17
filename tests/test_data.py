@@ -257,3 +257,65 @@ def test_default_range_ends_on_the_previous_trading_day(mock_dl):
     stocks, _ = fetch_prices(FALLBACK_TICKERS, FALLBACK_BENCHMARK, str(start), str(end))
 
     assert stocks.index.max().date() == previous_trading_day()
+
+
+# ── Partial upstream responses ───────────────────────────────────────────────
+
+
+@patch("keep_rollin.data.yf.download")
+def test_missing_benchmark_falls_back_instead_of_reporting_blanks(mock_dl):
+    """Regression: assets can arrive while the benchmark does not.
+
+    Nothing raises and the stock frame is non-empty, so the old guard treated
+    it as a successful live fetch — leaving every excess return undefined and
+    the dashboard reporting "no ranked result" with no explanation.
+    """
+    n = 300
+    dates = pd.date_range("2023-01-01", periods=n, freq="B")
+    rng = np.random.default_rng(0)
+    frame = pd.DataFrame(
+        {
+            FALLBACK_TICKERS[0]: 100 * np.cumprod(1 + rng.normal(0.001, 0.01, n)),
+            FALLBACK_TICKERS[1]: 100 * np.cumprod(1 + rng.normal(0.001, 0.01, n)),
+            FALLBACK_BENCHMARK: np.full(n, np.nan),
+        },
+        index=dates,
+    )
+    frame.columns = pd.MultiIndex.from_arrays(
+        [["Close"] * 3, [*FALLBACK_TICKERS, FALLBACK_BENCHMARK]]
+    )
+    mock_dl.return_value = frame
+
+    with pytest.warns(UserWarning, match="benchmark"):
+        stocks, bench, used_fallback = fetch_prices_with_fallback(
+            FALLBACK_TICKERS, FALLBACK_BENCHMARK, "2023-01-01", "2023-12-31"
+        )
+
+    assert used_fallback is True, "a blank benchmark must not pass as live data"
+    assert not bench.empty
+    assert not stocks.empty
+
+
+@patch("keep_rollin.data.yf.download")
+def test_missing_assets_still_falls_back(mock_dl):
+    n = 300
+    dates = pd.date_range("2023-01-01", periods=n, freq="B")
+    frame = pd.DataFrame(
+        {
+            FALLBACK_TICKERS[0]: np.full(n, np.nan),
+            FALLBACK_TICKERS[1]: np.full(n, np.nan),
+            FALLBACK_BENCHMARK: np.arange(100.0, 100.0 + n),
+        },
+        index=dates,
+    )
+    frame.columns = pd.MultiIndex.from_arrays(
+        [["Close"] * 3, [*FALLBACK_TICKERS, FALLBACK_BENCHMARK]]
+    )
+    mock_dl.return_value = frame
+
+    with pytest.warns(UserWarning, match="assets"):
+        _, _, used_fallback = fetch_prices_with_fallback(
+            FALLBACK_TICKERS, FALLBACK_BENCHMARK, "2023-01-01", "2023-12-31"
+        )
+
+    assert used_fallback is True
