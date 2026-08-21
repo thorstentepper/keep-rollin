@@ -10,6 +10,7 @@ Requires the ``app`` extra (``uv sync --extra app``).
 
 from __future__ import annotations
 
+import re
 from unittest.mock import patch
 
 import numpy as np
@@ -255,5 +256,15 @@ def test_basis_line_reports_the_data_actually_used_not_the_request():
 
     banner = [w.value for w in at.warning if "offline snapshot" in w.value][0]
     basis = [c.value for c in at.caption if "Excess returns over" in c.value][0]
-    for date in ("2021-08-16", "2026-08-14"):
-        assert date in banner and date in basis
+
+    # Compare the two against each other rather than against fixed dates: the
+    # snapshot is clipped to the default window, which moves with the calendar,
+    # so hardcoded dates only hold on the day they are written.
+    dates = re.compile(r"\d{4}-\d{2}-\d{2}")
+    banner_dates = dates.findall(banner)
+    basis_dates = dates.findall(basis)
+
+    assert len(banner_dates) == 2, f"expected a date range in the banner: {banner}"
+    assert banner_dates == basis_dates, (
+        f"banner says {banner_dates}, basis line says {basis_dates}"
+    )
