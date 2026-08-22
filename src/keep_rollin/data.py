@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import datetime
 import warnings
+from collections.abc import Sequence
 from importlib import resources
-from typing import Sequence
 
 import numpy as np
 import pandas as pd

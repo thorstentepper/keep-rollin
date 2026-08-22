@@ -171,7 +171,7 @@ def test_live_fetch_reports_no_fallback(mock_dl):
 @patch("keep_rollin.data.yf.download", side_effect=RuntimeError("rate limited"))
 def test_download_error_falls_back_to_snapshot(mock_dl):
     with pytest.warns(UserWarning, match="fallback"):
-        stocks, bm, used_fallback = fetch_prices_with_fallback(
+        stocks, _bm, used_fallback = fetch_prices_with_fallback(
             FALLBACK_TICKERS, FALLBACK_BENCHMARK, "2020-01-01", "2020-12-31"
         )
     assert used_fallback is True

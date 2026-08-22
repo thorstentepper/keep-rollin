@@ -10,6 +10,7 @@ Requires the ``app`` extra (``uv sync --extra app``).
 
 from __future__ import annotations
 
+import pathlib
 import re
 from unittest.mock import patch
 
@@ -19,7 +20,10 @@ import pytest
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
-APP = "streamlit_app.py"
+# Absolute on purpose. Streamlit 1.61 changed AppTest.from_file to resolve a
+# relative path against the calling test file rather than the working
+# directory, which silently pointed this at tests/streamlit_app.py.
+APP = str(pathlib.Path(__file__).resolve().parents[1] / "streamlit_app.py")
 TIMEOUT = 60
 
 TICKERS_LABEL = "Tickers (comma-separated)"
@@ -243,7 +247,7 @@ def test_basis_line_follows_a_changed_benchmark():
         _widget(at.sidebar.text_input, "Benchmark").set_value("^IXIC").run()
         at = _widget(at.button, "Analyse").click().run()
 
-    basis = [c.value for c in at.caption if "Excess returns over" in c.value][0]
+    basis = next(c.value for c in at.caption if "Excess returns over" in c.value)
     assert "^IXIC" in basis and "^GSPC" not in basis
 
 
@@ -254,8 +258,8 @@ def test_basis_line_reports_the_data_actually_used_not_the_request():
     ):
         at = _analyse()
 
-    banner = [w.value for w in at.warning if "offline snapshot" in w.value][0]
-    basis = [c.value for c in at.caption if "Excess returns over" in c.value][0]
+    banner = next(w.value for w in at.warning if "offline snapshot" in w.value)
+    basis = next(c.value for c in at.caption if "Excess returns over" in c.value)
 
     # Compare the two against each other rather than against fixed dates: the
     # snapshot is clipped to the default window, which moves with the calendar,

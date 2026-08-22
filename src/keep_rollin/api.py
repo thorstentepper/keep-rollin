@@ -45,7 +45,6 @@ from keep_rollin.metrics import (
     summarise,
 )
 
-
 #: How long a successful live fetch stays cached. Daily close prices do not
 #: change intraday, so re-fetching per request only burns Yahoo Finance quota.
 CACHE_TTL_SECONDS = 900

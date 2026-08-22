@@ -140,7 +140,7 @@ def main(argv: list[str] | None = None) -> None:
         rolling_sharpe = rolling_sharpe_ratio(exc, window=args.rolling_window)
         rolling_sortino = rolling_sortino_ratio(exc, window=args.rolling_window)
 
-        fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+        _, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
         rolling_sharpe.plot(
             ax=axes[0], title=f"Rolling Sharpe ({args.rolling_window}-day window)"
         )
