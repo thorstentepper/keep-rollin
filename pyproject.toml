@@ -37,6 +37,34 @@ rollin = "keep_rollin.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/keep_rollin"]
 
+[tool.ruff.lint]
+# Selected explicitly rather than inheriting ruff's defaults. Those defaults
+# widen between releases, so an unpinned linter can turn CI red on code nobody
+# touched — which is exactly what a ruff 0.15 -> 0.16 bump did here. With this
+# list, adopting a new rule family is a deliberate edit.
+select = [
+    "E4",   # pycodestyle: imports
+    "E7",   # pycodestyle: statements
+    "E9",   # pycodestyle: runtime errors
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "RUF",  # ruff-specific
+]
+ignore = [
+    # `a + [b]` reads fine here and the unpacking form is not clearly better,
+    # especially in tests where the concatenation mirrors the request shape.
+    "RUF005",
+    # The refresh script prints "rows x columns" with a multiplication sign on
+    # purpose; it is output, not an identifier.
+    "RUF001",
+]
+
+# Selecting a family means new rules *within* it arrive with a ruff upgrade.
+# That is the deliberate trade: families are pinned here, individual rules are
+# not, so an upgrade can still surface new findings — just never a whole new
+# category nobody opted into.
+
 [tool.ruff.lint.pydocstyle]
 # Docstrings follow NumPy style: sectioned with Parameters/Returns/Notes under
 # dashed underlines. The pydocstyle (D) rules are deliberately not enabled —

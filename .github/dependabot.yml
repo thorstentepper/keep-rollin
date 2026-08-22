@@ -27,9 +27,13 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
-    # One grouped pull request per month rather than one per package: on a
-    # solo repository, per-package noise is what makes the whole thing get
-    # ignored.
+    # Runtime and tooling are grouped separately on purpose. A linter that
+    # gains new default rules turns CI red on untouched code; grouped with
+    # runtime bumps, that failure hides whether the runtime bump itself was
+    # safe. Split, a red tooling PR never blocks a green runtime one.
     groups:
-      python-dependencies:
+      runtime:
         patterns: ["*"]
+        exclude-patterns: ["ruff", "mypy", "pytest", "pytest-cov", "httpx"]
+      tooling:
+        patterns: ["ruff", "mypy", "pytest", "pytest-cov", "httpx"]
