@@ -165,3 +165,54 @@ def test_rolling_window_bounds_match_the_api(mock_dl, capsys):
         with pytest.raises(SystemExit):
             main(["AAPL", "--rolling-window", str(bad)])
         assert "must be between" in capsys.readouterr().err
+
+
+# ── Plotting ─────────────────────────────────────────────────────────────────
+
+
+@patch("keep_rollin.cli.plt.show")
+@patch("keep_rollin.data.yf.download")
+def test_plot_flag_renders_both_charts(mock_dl, mock_show, capsys):
+    """The --plot branch is otherwise untested, and a refactor once broke it."""
+    import matplotlib.pyplot as plt
+
+    n = 300
+    rng = np.random.default_rng(6)
+    mock_dl.return_value = _yf_frame(
+        {
+            t: 100 * np.cumprod(1 + rng.normal(0.001, 0.01, n))
+            for t in ["AAPL", BENCHMARK]
+        },
+        n,
+    )
+
+    try:
+        main(["AAPL", "--plot"])  # must not raise
+        assert mock_show.called, "the chart was never displayed"
+        figure = plt.gcf()
+        assert len(figure.axes) == 2, "expected a Sharpe axis and a Sortino axis"
+        titles = [ax.get_title() for ax in figure.axes]
+        assert any("Sharpe" in t for t in titles)
+        assert any("Sortino" in t for t in titles)
+    finally:
+        plt.close("all")
+
+    assert "Highest Sharpe ratio" in capsys.readouterr().out
+
+
+@patch("keep_rollin.cli.plt.show")
+@patch("keep_rollin.data.yf.download")
+def test_no_charts_without_the_flag(mock_dl, mock_show):
+    n = 300
+    rng = np.random.default_rng(7)
+    mock_dl.return_value = _yf_frame(
+        {
+            t: 100 * np.cumprod(1 + rng.normal(0.001, 0.01, n))
+            for t in ["AAPL", BENCHMARK]
+        },
+        n,
+    )
+
+    main(["AAPL"])
+
+    assert not mock_show.called

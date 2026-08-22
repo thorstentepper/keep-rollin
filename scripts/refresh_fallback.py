@@ -153,8 +153,14 @@ def main(argv: list[str] | None = None) -> int:
     write_snapshot(frame, args.output, tickers, args.benchmark)
 
     size_kb = args.output.stat().st_size / 1024
+    try:
+        # Nicer to read when writing the default location inside the repo.
+        shown = args.output.relative_to(REPO_ROOT)
+    except ValueError:
+        # --output may point anywhere; an absolute path is still perfectly fine.
+        shown = args.output
     print(
-        f"Wrote {args.output.relative_to(REPO_ROOT)} — "
+        f"Wrote {shown} — "
         f"{len(frame)} rows × {len(frame.columns)} columns, "
         f"{frame.index.min().date()} → {frame.index.max().date()} ({size_kb:.1f} KB)"
     )
