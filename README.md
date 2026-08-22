@@ -183,34 +183,14 @@ uv run mypy src
 
 ## Project structure
 
-```
-.github/workflows/ci.yml        — ruff, mypy and pytest on push/PR (Python 3.10 and 3.13)
-Dockerfile                      — multi-stage build; dashboard and api targets
-streamlit_app.py                — Streamlit dashboard
-docs/
-    decisions/                  — architecture decision records, one file per decision
-    img/dashboard.png           — screenshot used in this README
-scripts/
-    refresh_fallback.py         — regenerate the offline price snapshot
-src/keep_rollin/
-    data.py                     — fetch adjusted close prices, shared defaults, offline fallback
-    metrics.py                  — Sharpe, Sortino, max drawdown, rolling variants, shared summary
-    cli.py                      — command-line entry point
-    api.py                      — FastAPI layer exposing the same metrics over HTTP
-    resources/
-        fallback_prices.parquet — offline snapshot used when Yahoo Finance is down
-tests/
-    conftest.py                 — pins matplotlib's headless backend for the suite
-    test_api.py
-    test_cli.py
-    test_data.py
-    test_metrics.py
-    test_streamlit_app.py
-pyproject.toml                  — project metadata, dependencies and optional extras
-uv.lock                         — pinned dependency versions
-requirements.txt                — pip entry point for Streamlit Community Cloud
-codecov.yml                     — coverage thresholds and PR comment behaviour
-```
+The package lives under `src/keep_rollin/`, with metrics, data access, CLI and
+API as separate modules ([0002](docs/decisions/0002-restructure-the-notebook-as-an-installable-package.md)).
+GitHub's file listing covers the layout; four things in it are not obvious:
+
+- **`src/keep_rollin/resources/fallback_prices.parquet`** — an offline price snapshot shipped inside the package, served (and flagged) when Yahoo Finance is unavailable ([0007](docs/decisions/0007-ship-an-offline-price-snapshot-as-a-fallback.md)).
+- **`streamlit_app.py` at the repository root** — where Streamlit Community Cloud expects to find it ([0011](docs/decisions/0011-deploy-the-dashboard-to-streamlit-community-cloud.md)).
+- **`requirements.txt` alongside `uv.lock`** — that host installs with pip and cannot read the lock file; it installs editable so a deploy cannot serve stale code ([0014](docs/decisions/0014-install-editable-for-pip-based-hosts.md)).
+- **`tests/conftest.py`** — pins matplotlib's headless backend, because Streamlit renders on a worker thread where an interactive backend crashes the interpreter.
 
 
 ## Credits
