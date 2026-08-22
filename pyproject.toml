@@ -23,13 +23,20 @@ dev = [
     "mypy>=1.10",
     "httpx>=0.27",
 ]
-app = [
-    "streamlit>=1.30",
-]
 api = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
 ]
+
+# Streamlit is a dependency group rather than an optional extra because the
+# deployment host runs a bare `uv sync` against uv.lock. Extras are opt-in and
+# would be skipped; a default group is installed. See
+# docs/decisions/0015-install-streamlit-as-a-default-dependency-group.md
+[dependency-groups]
+app = ["streamlit>=1.30"]
+
+[tool.uv]
+default-groups = ["app"]
 
 [project.scripts]
 rollin = "keep_rollin.cli:main"

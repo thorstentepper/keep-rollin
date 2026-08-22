@@ -35,10 +35,12 @@ Data is fetched live from Yahoo Finance. If Yahoo Finance is unavailable, the da
 uv sync --all-extras          # library + CLI + dev tools + Streamlit + API
 ```
 
-Or install a minimal set:
+Streamlit is a default dependency group, so it installs even without extras
+([0015](docs/decisions/0015-install-streamlit-as-a-default-dependency-group.md)). For a
+genuinely minimal install:
 
 ```bash
-uv sync --extra dev           # library + CLI + dev tools only
+uv sync --no-default-groups   # library + CLI only
 ```
 
 
@@ -191,7 +193,7 @@ GitHub's file listing covers the layout; four things in it are not obvious:
 
 - **`src/keep_rollin/resources/fallback_prices.parquet`** — an offline price snapshot shipped inside the package, served (and flagged) when Yahoo Finance is unavailable ([0007](docs/decisions/0007-ship-an-offline-price-snapshot-as-a-fallback.md)).
 - **`streamlit_app.py` at the repository root** — where Streamlit Community Cloud expects to find it ([0011](docs/decisions/0011-deploy-the-dashboard-to-streamlit-community-cloud.md)).
-- **`requirements.txt` alongside `uv.lock`** — that host installs with pip and cannot read the lock file; it installs editable so a deploy cannot serve stale code ([0014](docs/decisions/0014-install-editable-for-pip-based-hosts.md)).
+- **Streamlit is a dependency group, not an extra** — the deployment host runs a bare `uv sync`, which installs groups but skips extras ([0015](docs/decisions/0015-install-streamlit-as-a-default-dependency-group.md)).
 - **`tests/conftest.py`** — pins matplotlib's headless backend, because Streamlit renders on a worker thread where an interactive backend crashes the interpreter.
 
 

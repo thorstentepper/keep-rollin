@@ -24,7 +24,9 @@ condition Community Cloud attaches to its free tier.
 
 - A `requirements.txt` now exists alongside `pyproject.toml` purely for this
   host, duplicating dependency information
-  ([0003](0003-use-uv-and-hatchling-for-packaging.md)).
+  ([0003](0003-use-uv-and-hatchling-for-packaging.md)). *(No longer true: the
+  host later switched to `uv sync` and the file was removed —
+  [0015](0015-install-streamlit-as-a-default-dependency-group.md).)*
 - Only the dashboard is hosted. The API has no public deployment.
 - Community Cloud sleeps idle apps, so the first visitor after a quiet period
   waits for a cold start — the same conditions under which the upstream fetch
