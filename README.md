@@ -21,8 +21,8 @@ Computes annualised risk/return metrics for multi-asset portfolios, including ro
 
 Two conventions apply everywhere — to the CLI, the dashboard and the API alike:
 
-- **Excess return is measured against the benchmark, not a risk-free rate.** Classical Sharpe uses the risk-free rate; measuring against a configurable benchmark makes this closer to an information ratio. That is a deliberate choice: the question here is "did this asset beat the benchmark, per unit of risk taken?" The benchmark is any Yahoo Finance symbol — an index, a sector ETF, or a single stock — so the same tooling answers both "did it beat the market?" and "did it beat that competitor?"
-- **Date ranges are inclusive at both ends**, and returns are annualised with a 252-trading-day year.
+- **Excess return is measured against the benchmark, not a risk-free rate** — closer to an information ratio than a textbook Sharpe ratio, and a deliberate choice ([0004](docs/decisions/0004-measure-excess-return-against-a-benchmark.md)). The benchmark is any Yahoo Finance symbol: an index, a sector ETF, or a single stock.
+- **Date ranges are inclusive at both ends** ([0013](docs/decisions/0013-treat-date-ranges-as-inclusive-at-both-ends.md)), and returns are annualised with a 252-trading-day year.
 
 Data is fetched live from Yahoo Finance. If Yahoo Finance is unavailable, the dashboard falls back to a small price snapshot shipped with the package so it still renders — clearly flagged as offline data.
 
@@ -50,7 +50,7 @@ uv run streamlit run streamlit_app.py
 
 Opens an interactive dashboard in your browser: pick tickers, benchmark, date range, and rolling window from the sidebar and click **Analyse**.
 
-It opens on MSFT and NVDA against the S&P 500, over the five years ending on the previous trading day. Trading days are approximated as weekdays, so the default end date does not skip exchange holidays.
+It opens on MSFT and NVDA against the S&P 500, over the five years ending on the previous trading day ([0010](docs/decisions/0010-default-to-five-years-ending-on-the-previous-trading-day.md)).
 
 ### Docker
 
@@ -84,14 +84,9 @@ Then visit <http://localhost:8000/docs>.
 docker run --rm keep-rollin rollin MSFT NVDA
 ```
 
-Both images run as a non-root user and include the bundled offline price snapshot, so the fallback works in the container too.
+Both images run as a non-root user.
 
-**Installing Docker.** On Debian/Ubuntu (including WSL2), the distro packages are enough:
-
-```bash
-sudo apt install docker.io docker-buildx   # buildx is required because the Dockerfile uses BuildKit cache mounts
-sudo usermod -aG docker $USER   # then log out and back in, or run: newgrp docker
-```
+The build requires BuildKit, so Docker needs `buildx` available ([0009](docs/decisions/0009-build-separate-docker-targets-per-service.md)).
 
 ### CLI
 
@@ -122,7 +117,7 @@ Because the benchmark is just another symbol, pointing it at a competitor turns 
 rollin MSFT NVDA --benchmark AAPL --start 2023-01-01 --end 2023-12-31
 ```
 
-Over 2023 that drops MSFT's Sharpe from 1.33 against the S&P 500 to 0.16 against AAPL: it beat the index comfortably and its competitor barely. Max drawdown is computed on prices rather than excess returns, so that column stays absolute and does not move with the benchmark.
+Over 2023 that drops MSFT's Sharpe from 1.33 against the S&P 500 to 0.16 against AAPL: it beat the index comfortably and its competitor barely.
 
 ### HTTP API
 
@@ -137,7 +132,6 @@ Interactive docs at <http://localhost:8000/docs>.
 curl "http://localhost:8000/metrics?tickers=MSFT&tickers=NVDA&start=2023-01-01&end=2023-12-31"
 ```
 
-Both bounds are inclusive, so that range covers the whole 2023 calendar year: the first and last bars are 2023-01-03 and 2023-12-29.
 
 | Endpoint | Description |
 |----------|-------------|
@@ -167,7 +161,7 @@ The bundled snapshot backs the dashboard when Yahoo Finance is unavailable. Rege
 uv run python scripts/refresh_fallback.py
 ```
 
-It refuses to overwrite the existing snapshot if the fetch fails or returns too little data, so a bad run cannot destroy the safety net. Pass tickers and `--benchmark` / `--start` / `--end` to change what it covers.
+Pass tickers and `--benchmark` / `--start` / `--end` to change what it covers.
 
 
 ## Running tests
@@ -193,8 +187,9 @@ uv run mypy src
 .github/workflows/ci.yml        — ruff, mypy and pytest on push/PR (Python 3.10 and 3.13)
 Dockerfile                      — multi-stage build; dashboard and api targets
 streamlit_app.py                — Streamlit dashboard
-docs/img/
-    dashboard.png               — screenshot used in this README
+docs/
+    decisions/                  — architecture decision records, one file per decision
+    img/dashboard.png           — screenshot used in this README
 scripts/
     refresh_fallback.py         — regenerate the offline price snapshot
 src/keep_rollin/
