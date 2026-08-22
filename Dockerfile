@@ -28,22 +28,25 @@ FROM build-base AS build-dashboard
 
 # Dependencies first, so a source-only change does not re-resolve them.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --extra app
+    uv sync --frozen --no-install-project
 
 COPY src ./src
 COPY streamlit_app.py ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --extra app
+    uv sync --frozen
 
 # ── API build ────────────────────────────────────────────────────────────────
+# --no-default-groups keeps Streamlit out: it is a default group so the
+# dashboard and the deployment host get it without asking, but the API image
+# has no use for it.
 FROM build-base AS build-api
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --extra api
+    uv sync --frozen --no-install-project --extra api --no-default-groups
 
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --extra api
+    uv sync --frozen --extra api --no-default-groups
 
 # ── Shared runtime base ──────────────────────────────────────────────────────
 FROM python:3.13-slim AS runtime-base

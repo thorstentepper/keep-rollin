@@ -1,6 +1,6 @@
 # 0014. Install editable for pip-based hosts
 
-**Status:** Accepted — 2026-08-16
+**Status:** Superseded by [0015](0015-install-streamlit-as-a-default-dependency-group.md) — 2026-08-16
 **Decision:** Use `-e .[app]` in `requirements.txt` so the deployed app always
 imports the checked-out source.
 
