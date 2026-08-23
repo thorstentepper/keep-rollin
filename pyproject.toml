@@ -80,6 +80,12 @@ ignore = [
 # that are written.
 convention = "numpy"
 
+[tool.coverage.run]
+# Everything the tests exercise, not just the importable package. The
+# dashboard and the refresh script are both tested; measuring only
+# src/keep_rollin reported a higher number over less code.
+source = ["keep_rollin", "streamlit_app", "scripts"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
