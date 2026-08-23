@@ -173,7 +173,7 @@ Pass tickers and `--benchmark` / `--start` / `--end` to change what it covers.
 ```bash
 uv run pytest
 # with coverage
-uv run pytest --cov=keep_rollin
+uv run pytest --cov
 ```
 
 CI also lints and type-checks. To reproduce it locally, run what the workflow runs:
